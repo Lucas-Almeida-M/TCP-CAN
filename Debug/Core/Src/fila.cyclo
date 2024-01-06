@@ -1,0 +1,5 @@
+fila.c:18:15:createQueue	1
+fila.c:29:5:isEmpty	1
+fila.c:34:6:enqueue	2
+fila.c:52:17:dequeue	3
+fila.c:73:6:freeQueue	2
