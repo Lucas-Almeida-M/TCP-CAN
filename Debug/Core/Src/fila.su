@@ -1,5 +1,0 @@
-../Core/Src/fila.c:18:15:createQueue	16	static
-../Core/Src/fila.c:29:5:isEmpty	16	static
-../Core/Src/fila.c:34:6:enqueue	32	static
-../Core/Src/fila.c:52:17:dequeue	48	static
-../Core/Src/fila.c:73:6:freeQueue	32	static

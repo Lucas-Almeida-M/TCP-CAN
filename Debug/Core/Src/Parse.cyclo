@@ -1,7 +1,0 @@
-Parse.c:23:6:ValidatePacket	3
-Parse.c:37:6:DecodeUartPacket	2
-Parse.c:49:6:DecodeCanPacket	3
-Parse.c:70:6:CanWritePacket	3
-Parse.c:92:6:LoadFilterList	2
-Parse.c:102:6:ConfigFilterList	4
-Parse.c:152:6:InitFilterList	7
