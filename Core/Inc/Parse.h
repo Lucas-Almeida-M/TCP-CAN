@@ -7,7 +7,6 @@
 #include "can.h"
 #include <stdio.h>
 #include <stdbool.h>
-#include "library_can.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "main.h"
@@ -36,12 +35,11 @@ typedef union // Ini
 
 	enum FilterIds
 	{
-		CANID_BROADCAST = 0x00,
-		CANID_NUCLEO = 0x01,
-		CANID_BLUEPILL1= 0x02,
-		CANID_BLUEPILL2= 0x03,
+		DATA,
+		STATUS,
+		CONFIGURATION,
+		RESTART,
 		CANID_COUNT
-
 	} FilterId;
 
 	uint32_t FilterIdList[CANID_COUNT];

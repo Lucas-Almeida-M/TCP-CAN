@@ -49,21 +49,21 @@ void DecodeUartPacket(CommunicationPacket *comPacket, uint8_t *buffer)
 void DecodeCanPacket(uint32_t canID, CanPacket *canPacket, uint8_t *buffer)
 {
 
-	canPacket->packet.canID =  (uint8_t) canID;
-	canPacket->packet.seq =  buffer[0];
-	memcpy(&canPacket->packet.ctrl, &buffer[1], sizeof(buffer[1]));
-	if(canPacket->packet.ctrl.control & OPEN_MESSAGE )
-	{
-		for (int i = 0; i < 6; i++)
-		{
-			canPacket->packet.data[i] = buffer [i + 2];
-		}
-		// get message to line
-		struct MyStruct item1  = {0};
-		memcpy(&item1, canPacket, 9*sizeof(uint8_t));
-
-		enqueue(queue, item1);
-	}
+//	canPacket->packet.canID =  (uint8_t) canID;
+//	canPacket->packet.seq =  buffer[0];
+//	memcpy(&canPacket->packet.ctrl, &buffer[1], sizeof(buffer[1]));
+//	if(canPacket->packet.ctrl.control & OPEN_MESSAGE )
+//	{
+//		for (int i = 0; i < 6; i++)
+//		{
+//			canPacket->packet.data[i] = buffer [i + 2];
+//		}
+//		// get message to line
+//		struct MyStruct item1  = {0};
+//		memcpy(&item1, canPacket, 9*sizeof(uint8_t));
+//
+//		enqueue(queue, item1);
+//	}
 }
 
 
