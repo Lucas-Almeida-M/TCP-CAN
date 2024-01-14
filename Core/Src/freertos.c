@@ -48,6 +48,11 @@
 
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
+osThreadId ProcessCanMsg_tHandle;
+osThreadId ReceiveCAN_MSG_Handle;
+osThreadId SendCAN_MSG_Handle;
+osMessageQId queue_can_receiveHandle;
+osMessageQId queue_can_sendHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -55,6 +60,9 @@ osThreadId defaultTaskHandle;
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void const * argument);
+void ProcessCanMsg(void const * argument);
+void ReceiveCAN_MSG(void const * argument);
+void SendCAN_MSG(void const * argument);
 
 extern void MX_LWIP_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -97,6 +105,15 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* definition and creation of queue_can_receive */
+  osMessageQDef(queue_can_receive, 20, CanPacket);
+  queue_can_receiveHandle = osMessageCreate(osMessageQ(queue_can_receive), NULL);
+
+  /* definition and creation of queue_can_send */
+  osMessageQDef(queue_can_send, 10, CanPacket);
+  queue_can_sendHandle = osMessageCreate(osMessageQ(queue_can_send), NULL);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -105,6 +122,18 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of defaultTask */
   osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 512);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+
+  /* definition and creation of ProcessCanMsg_t */
+  osThreadDef(ProcessCanMsg_t, ProcessCanMsg, osPriorityHigh, 0, 512);
+  ProcessCanMsg_tHandle = osThreadCreate(osThread(ProcessCanMsg_t), NULL);
+
+  /* definition and creation of ReceiveCAN_MSG_ */
+  osThreadDef(ReceiveCAN_MSG_, ReceiveCAN_MSG, osPriorityNormal, 0, 256);
+  ReceiveCAN_MSG_Handle = osThreadCreate(osThread(ReceiveCAN_MSG_), NULL);
+
+  /* definition and creation of SendCAN_MSG_ */
+  osThreadDef(SendCAN_MSG_, SendCAN_MSG, osPriorityNormal, 0, 256);
+  SendCAN_MSG_Handle = osThreadCreate(osThread(SendCAN_MSG_), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -130,6 +159,60 @@ __weak void StartDefaultTask(void const * argument)
     osDelay(1);
   }
   /* USER CODE END StartDefaultTask */
+}
+
+/* USER CODE BEGIN Header_ProcessCanMsg */
+/**
+* @brief Function implementing the ProcessCanMsg_t thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_ProcessCanMsg */
+__weak void ProcessCanMsg(void const * argument)
+{
+  /* USER CODE BEGIN ProcessCanMsg */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END ProcessCanMsg */
+}
+
+/* USER CODE BEGIN Header_ReceiveCAN_MSG */
+/**
+* @brief Function implementing the ReceiveCAN_MSG_ thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_ReceiveCAN_MSG */
+__weak void ReceiveCAN_MSG(void const * argument)
+{
+  /* USER CODE BEGIN ReceiveCAN_MSG */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END ReceiveCAN_MSG */
+}
+
+/* USER CODE BEGIN Header_SendCAN_MSG */
+/**
+* @brief Function implementing the SendCAN_MSG_ thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_SendCAN_MSG */
+__weak void SendCAN_MSG(void const * argument)
+{
+  /* USER CODE BEGIN SendCAN_MSG */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END SendCAN_MSG */
 }
 
 /* Private application code --------------------------------------------------*/

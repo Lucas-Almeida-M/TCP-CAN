@@ -17,7 +17,7 @@
 #define STD_ID  0
 #define EXT_ID  1
 #define FILTER_TYPE_16 0
-#define FILTER_TYEPE_32 1
+#define FILTER_TYPE_32 1
 #define FILTER_MAX_NUM 14
 
 
@@ -35,18 +35,54 @@ typedef union // Ini
 
 	enum FilterIds
 	{
-		DATA,
-		STATUS,
-		CONFIGURATION,
-		RESTART,
+		BROADCAST  = 0x00,
+		BOARD_F7   = 0x01,
+		DEVICE_1   = 0x02, // HABILITAR DE ACORDO COM DEVICE
+		DEVICE_2   = 0x03,
+		DEVICE_3   = 0x04,
+		DEVICE_4   = 0x05,
+		DEVICE_5   = 0x06,
+		DEVICE_6   = 0x07,
+		DEVICE_7   = 0x08,
+		DEVICE_8   = 0x09,
+		DEVICE_9   = 0x0A,
+		DEVICE_10  = 0x0B,
 		CANID_COUNT
+
 	} FilterId;
 
 	uint32_t FilterIdList[CANID_COUNT];
 
 } CanFilterList;
 
+typedef struct control
+{
+	bool bit0 : 1;
+	bool bit1 : 1;
+	bool bit2 : 1;
+	bool bit3 : 1;
+	bool bit4 : 1;
+	bool bit5 : 1;
+	bool bit6 : 1;
+	bool bit7 : 1;
+}controlBit;
 
+typedef struct candata
+{
+	union Ctrl0
+	{
+		controlBit controlBits;
+		uint8_t value;
+	}ctrl0;
+
+	union ctrl1
+	{
+		controlBit controlBits;
+		uint8_t value;
+	}ctrl1;
+
+	uint8_t data [CAN_SIZE - CAN_HEADER];
+}CanData;
 
 typedef union CANPACKET
 {
@@ -54,30 +90,15 @@ typedef union CANPACKET
 	struct
 	{
 		uint8_t canID;
-		uint8_t seq;
-		union cont
+		union canbuf
 		{
-			struct control
-			{
-				bool bitControl0 : 1;
-				bool bitControl1 : 1;
-				bool bitControl2 : 1;
-				bool bitControl3 : 1;
-				bool bitControl4 : 1;
-				bool bitControl5 : 1;
-				bool bitControl6 : 1;
-				bool bitControl7 : 1;
-			}c;
-			uint8_t control;
-		}ctrl;
+			CanData canDataFields;
+			uint8_t canData[8];
+		}canBuffer;
 
-		uint8_t data [CAN_SIZE - CAN_HEADER];
 	}packet;
 
 } CanPacket;
-
-
-
 
 //typedef union UARTPACKET
 //{
@@ -95,19 +116,8 @@ typedef union CANPACKET
 
 
 
-
-typedef struct  {
-
-	uint8_t canID;
-	CanPacket Can;
-
-}CommunicationPacket;
-
-
-
 bool ValidatePacket(uint8_t canID);
 
-void DecodeUartPacket(CommunicationPacket *comPacket, uint8_t *buffer);
 
 void DecodeCanPacket(uint32_t canID, CanPacket *canPacket, uint8_t *buffer);
 bool CanWritePacket(uint32_t id, uint8_t *buffer, uint8_t can_rtr, uint16_t tamanho);

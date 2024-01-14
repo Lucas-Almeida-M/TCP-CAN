@@ -21,6 +21,7 @@
 #include "cmsis_os.h"
 #include "can.h"
 #include "lwip.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -40,6 +41,7 @@
 struct netconn com1 = {0};
 uint8_t canMessage = 0;
 struct Queue* queue;
+extern osMessageQId CAN_MessageHandle;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -58,7 +60,6 @@ struct Queue* queue;
 
 uint8_t uartRxBuffer[8] = {0}; //buffer recebido pela serial
 uint8_t canRxBuffer [8] = {0}; //buffer recebido pela interface CAN
-CanPacket canPacket = { 0 } ;
 extern struct tcp_pcb *tpcb;
 extern struct tcp_server_struct *es;
 /* USER CODE END PV */
@@ -104,6 +105,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -181,20 +183,7 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
-{
-//	CanPacket *canPack;
-	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-//	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, canRxBuffer);
-//	canMessage = 1;
-//
-//	DecodeCanPacket(RxHeader.StdId, &canPacket, canRxBuffer);
-//	netconn_write(&com1, &canPack, sizeof(canPack), NETCONN_COPY);
-//	if(xQueueSend(CanMessageProcess_Handler , &canPack, 100 ) == pdPASS )
-//	{
-//
-//	}
-}
+
 
 
 void StartDefaultTask(void const * argument)
@@ -211,39 +200,6 @@ void StartDefaultTask(void const * argument)
   /* USER CODE END StartDefaultTask */
 }
 
-
-void Process_CAN(void const * argument)
-{
-  /* USER CODE BEGIN ProcessCanMsg */
-    queue = createQueue();
-	CanPacket canData = {0};
-  /* Infinite loop */
-//  for(;;)
-//  {
-//	if (com1.type!=0)
-//	{
-//		if (canMessage)
-//		{
-//			memcpy(&canData, &canPacket,sizeof(canPacket));
-//			netconn_write(&com1, &canData, sizeof(canData), NETCONN_COPY);
-//			canMessage = 0;
-//		}
-//	}
-//	  osDelay(1);
-//  }
-
-  for(;;)
-   {
-	  if (!isEmpty(queue)) {
-		 struct MyStruct item = dequeue(queue);
-		 memcpy(&canData, &item, sizeof(canData));
-		 int a = 1;
-
-	 }
- 	  osDelay(100);
-   }
-  /* USER CODE END ProcessCanMsg */
-}
 
 /* USER CODE END 4 */
 
@@ -264,7 +220,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+  if (htim->Instance == TIM2)
+  {
+	  __NOP();
+  }
   /* USER CODE END Callback 1 */
 }
 

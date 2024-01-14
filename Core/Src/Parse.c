@@ -33,40 +33,6 @@ bool ValidatePacket(uint8_t canID)
 }
 
 
-
-void DecodeUartPacket(CommunicationPacket *comPacket, uint8_t *buffer)
-{
-	comPacket->canID = buffer[0];
-	comPacket->Can.packet.seq = buffer[1];
-	memcpy(&comPacket->Can.packet.ctrl, &buffer[2], sizeof(buffer[2]));
-
-	for (int i = 0; i < 5; i++)
-	{
-		comPacket->Can.packet.data[i] = buffer[i + 3];
-	}
-}
-
-void DecodeCanPacket(uint32_t canID, CanPacket *canPacket, uint8_t *buffer)
-{
-
-//	canPacket->packet.canID =  (uint8_t) canID;
-//	canPacket->packet.seq =  buffer[0];
-//	memcpy(&canPacket->packet.ctrl, &buffer[1], sizeof(buffer[1]));
-//	if(canPacket->packet.ctrl.control & OPEN_MESSAGE )
-//	{
-//		for (int i = 0; i < 6; i++)
-//		{
-//			canPacket->packet.data[i] = buffer [i + 2];
-//		}
-//		// get message to line
-//		struct MyStruct item1  = {0};
-//		memcpy(&item1, canPacket, 9*sizeof(uint8_t));
-//
-//		enqueue(queue, item1);
-//	}
-}
-
-
 bool CanWritePacket(uint32_t id, uint8_t *buffer, uint8_t can_rtr, uint16_t tamanho)
 {
 
@@ -107,7 +73,7 @@ void ConfigFilterList (uint32_t id1, uint32_t id2, uint32_t id3, uint32_t id4, u
     filterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
     filterConfig.FilterBank = filterBank;
 
-    if (filterScale == FILTER_TYEPE_32) {
+    if (filterScale == FILTER_TYPE_32) {
 
         filterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
         filterConfig.FilterMode = CAN_FILTERMODE_IDLIST;
@@ -164,7 +130,7 @@ void InitFilterList(uint32_t *idList, uint8_t numFilters, uint8_t filterScale)
 	}
 
 
-	if (filterScale == FILTER_TYEPE_32) //Utilizando o registrados em 32bits
+	if (filterScale == FILTER_TYPE_32) //Utilizando o registrados em 32bits
 	{
 		for (id = 0; id < numFilters && filterBankCounter < maxFilterBanks; id += 2)
 		{

@@ -21,7 +21,11 @@
 #include "can.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "Parse.h"
+CAN_TxHeaderTypeDef   TxHeader;
+CAN_RxHeaderTypeDef   RxHeader;
+CAN_FilterTypeDef     sFilterConfig;
+CanFilterList     filterList;
 /* USER CODE END 0 */
 
 CAN_HandleTypeDef hcan1;
@@ -54,7 +58,25 @@ void MX_CAN1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN1_Init 2 */
+  LoadFilterList(&filterList);
+   InitFilterList(filterList.FilterIdList, CANID_COUNT , FILTER_TYPE_16);
 
+
+
+   /*##-3- Start the CAN peripheral ###########################################*/
+      if (HAL_CAN_Start(&hcan1) != HAL_OK)
+      {
+        /* Start Error */
+        Error_Handler();
+      }
+
+      /*##-4- Start the Transmission process #####################################*/
+
+        // CAN_Write_Packet(TxData, CAN_RTR_DATA, (uint16_t *) 8);
+
+       /*##-4- Activate CAN RX notification #######################################*/
+ 	HAL_CAN_Start(&hcan1);
+ 	HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
   /* USER CODE END CAN1_Init 2 */
 
 }
@@ -78,8 +100,8 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
     */
     GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
