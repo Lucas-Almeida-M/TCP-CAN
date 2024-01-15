@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2023 STMicroelectronics.
+  * Copyright (c) 2024 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -26,7 +26,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 #include "tcpserver.h"
 #include "api.h"
 #include "Parse.h"
@@ -57,7 +56,6 @@ extern osMessageQId CAN_MessageHandle;
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
 uint8_t uartRxBuffer[8] = {0}; //buffer recebido pela serial
 uint8_t canRxBuffer [8] = {0}; //buffer recebido pela interface CAN
 extern struct tcp_pcb *tpcb;
@@ -115,6 +113,7 @@ int main(void)
 
   /* Start scheduler */
   osKernelStart();
+
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -183,9 +182,6 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-
-
-
 void StartDefaultTask(void const * argument)
 {
   /* init code for LWIP */
@@ -199,7 +195,6 @@ void StartDefaultTask(void const * argument)
   }
   /* USER CODE END StartDefaultTask */
 }
-
 
 /* USER CODE END 4 */
 

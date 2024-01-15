@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2023 STMicroelectronics.
+  * Copyright (c) 2024 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -120,7 +120,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 512);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of ProcessCanMsg_t */
@@ -132,7 +132,7 @@ void MX_FREERTOS_Init(void) {
   ReceiveCAN_MSG_Handle = osThreadCreate(osThread(ReceiveCAN_MSG_), NULL);
 
   /* definition and creation of SendCAN_MSG_ */
-  osThreadDef(SendCAN_MSG_, SendCAN_MSG, osPriorityNormal, 0, 256);
+  osThreadDef(SendCAN_MSG_, SendCAN_MSG, osPriorityBelowNormal, 0, 128);
   SendCAN_MSG_Handle = osThreadCreate(osThread(SendCAN_MSG_), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

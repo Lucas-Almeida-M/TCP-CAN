@@ -36,6 +36,7 @@ void ReceiveCAN_MSG(void *argument)
 	BaseType_t xStatus = xQueueReceive(queue_can_receiveHandle, &canMSG, 0);
 	if (xStatus == pdPASS)
 	{
+		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 		// conseguiu tirar da fila
 		//	netconn_write(&com1, &canPack, sizeof(canPack), NETCONN_COPY);
 
@@ -100,7 +101,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	memcpy(&canPacket.packet.canBuffer, canRX, sizeof(canRX));
 	xQueueSendToBackFromISR(queue_can_receiveHandle, &canPacket, &xHigherPriorityTaskWoken);
 
-	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+//	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
 }
 

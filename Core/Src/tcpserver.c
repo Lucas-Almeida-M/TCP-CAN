@@ -17,8 +17,8 @@ struct netconn *conn, *newconn;
 static struct netbuf *buf;
 static ip_addr_t *addr;
 static unsigned short port;
-char msg[1000];
-char smsg[1000];
+char msg[100];
+char smsg[200];
 extern struct netconn com1;
 
 
@@ -33,7 +33,7 @@ static void tcp_thread(void *arg)
 	if (conn!=NULL)
 	{
 		/* Bind connection to the port number 7. */
-		err = netconn_bind(conn, IP_ADDR_ANY, 15);
+		err = netconn_bind(conn, IP_ADDR_ANY, 7);
 
 		if (err == ERR_OK)
 		{
@@ -67,7 +67,7 @@ static void tcp_thread(void *arg)
 							int len = sprintf (smsg, "\"%s\" was sent by the Server\n", msg);
 
 							netconn_write(newconn, smsg, len, NETCONN_COPY);  // send the message back to the client
-							memset (msg, '\0', 1000);  // clear the buffer
+							memset (msg, '\0', 100);  // clear the buffer
 						}
 						while (netbuf_next(buf) >0);
 
@@ -90,7 +90,5 @@ static void tcp_thread(void *arg)
 
 void tcpserver_init(void)
 {
-  int a = sys_thread_new("tcp_thread", tcp_thread, NULL, DEFAULT_THREAD_STACKSIZE,osPriorityNormal);
-HAL_Delay(10);
-  //  xTaskCreate(pxTaskCode, pcName, usStackDepth, pvParameters, uxPriority, pxCreatedTask)
+  sys_thread_new("tcp_thread", tcp_thread, NULL, DEFAULT_THREAD_STACKSIZE,osPriorityNormal);
 }
