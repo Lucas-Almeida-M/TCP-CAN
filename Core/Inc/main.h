@@ -36,6 +36,7 @@ extern "C" {
 #include "stdlib.h"
 #include "string.h"
 #include "fila.h"
+#include "tcpclient.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

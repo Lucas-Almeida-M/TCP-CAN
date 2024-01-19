@@ -48,11 +48,23 @@
 
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
+uint32_t defaultTaskBuffer[ 256 ];
+osStaticThreadDef_t defaultTaskControlBlock;
 osThreadId ProcessCanMsg_tHandle;
+uint32_t ProcessCanMsg_tBuffer[ 512 ];
+osStaticThreadDef_t ProcessCanMsg_tControlBlock;
 osThreadId ReceiveCAN_MSG_Handle;
+uint32_t ReceiveCAN_MSG_Buffer[ 256 ];
+osStaticThreadDef_t ReceiveCAN_MSG_ControlBlock;
 osThreadId SendCAN_MSG_Handle;
+uint32_t SendCAN_MSG_Buffer[ 256 ];
+osStaticThreadDef_t SendCAN_MSG_ControlBlock;
 osMessageQId queue_can_receiveHandle;
+uint8_t queue_can_receiveBuffer[ 20 * sizeof( CanPacket ) ];
+osStaticMessageQDef_t queue_can_receiveControlBlock;
 osMessageQId queue_can_sendHandle;
+uint8_t queue_can_sendBuffer[ 10 * sizeof( CanPacket ) ];
+osStaticMessageQDef_t queue_can_sendControlBlock;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -107,11 +119,11 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* definition and creation of queue_can_receive */
-  osMessageQDef(queue_can_receive, 20, CanPacket);
+  osMessageQStaticDef(queue_can_receive, 20, CanPacket, queue_can_receiveBuffer, &queue_can_receiveControlBlock);
   queue_can_receiveHandle = osMessageCreate(osMessageQ(queue_can_receive), NULL);
 
   /* definition and creation of queue_can_send */
-  osMessageQDef(queue_can_send, 10, CanPacket);
+  osMessageQStaticDef(queue_can_send, 10, CanPacket, queue_can_sendBuffer, &queue_can_sendControlBlock);
   queue_can_sendHandle = osMessageCreate(osMessageQ(queue_can_send), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -120,19 +132,19 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256, defaultTaskBuffer, &defaultTaskControlBlock);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of ProcessCanMsg_t */
-  osThreadDef(ProcessCanMsg_t, ProcessCanMsg, osPriorityHigh, 0, 512);
+  osThreadStaticDef(ProcessCanMsg_t, ProcessCanMsg, osPriorityHigh, 0, 512, ProcessCanMsg_tBuffer, &ProcessCanMsg_tControlBlock);
   ProcessCanMsg_tHandle = osThreadCreate(osThread(ProcessCanMsg_t), NULL);
 
   /* definition and creation of ReceiveCAN_MSG_ */
-  osThreadDef(ReceiveCAN_MSG_, ReceiveCAN_MSG, osPriorityNormal, 0, 256);
+  osThreadStaticDef(ReceiveCAN_MSG_, ReceiveCAN_MSG, osPriorityNormal, 0, 256, ReceiveCAN_MSG_Buffer, &ReceiveCAN_MSG_ControlBlock);
   ReceiveCAN_MSG_Handle = osThreadCreate(osThread(ReceiveCAN_MSG_), NULL);
 
   /* definition and creation of SendCAN_MSG_ */
-  osThreadDef(SendCAN_MSG_, SendCAN_MSG, osPriorityBelowNormal, 0, 128);
+  osThreadStaticDef(SendCAN_MSG_, SendCAN_MSG, osPriorityBelowNormal, 0, 256, SendCAN_MSG_Buffer, &SendCAN_MSG_ControlBlock);
   SendCAN_MSG_Handle = osThreadCreate(osThread(SendCAN_MSG_), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

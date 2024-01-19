@@ -41,6 +41,7 @@ struct netconn com1 = {0};
 uint8_t canMessage = 0;
 struct Queue* queue;
 extern osMessageQId CAN_MessageHandle;
+extern sys_sem_t tcpsem;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -105,6 +106,7 @@ int main(void)
   MX_CAN1_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start_IT(&htim2);
 
   /* USER CODE END 2 */
 
@@ -186,12 +188,19 @@ void StartDefaultTask(void const * argument)
 {
   /* init code for LWIP */
   MX_LWIP_Init();
-  tcpserver_init();
+  tcpclient_init();
   /* USER CODE BEGIN StartDefaultTask */
+  int indx = 0;
+  char smsgc[200];
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	sprintf (smsgc, "index value = %d\n", indx++);
+	// semaphore must be taken before accessing the tcpsend function
+	sys_arch_sem_wait(&tcpsem, 500);
+	// send the data to the server
+	tcpsend(smsgc);
+	osDelay(50);
   }
   /* USER CODE END StartDefaultTask */
 }
