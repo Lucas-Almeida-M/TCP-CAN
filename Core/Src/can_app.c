@@ -11,12 +11,15 @@
 #include "cmsis_os.h"
 #include "queue.h"
 
-
+int testecountnucleo = 0;
+int testecountblack = 0;
 uint8_t canRX[8] = {};
 uint8_t canTX[8] = {};
 extern uint32_t TxMailbox;
 extern osMessageQId queue_can_sendHandle;
 extern osMessageQId queue_can_receiveHandle;
+extern DeviceState deviceState;
+extern char tcpmsg[];
 
 
 
@@ -36,6 +39,29 @@ void ReceiveCAN_MSG(void *argument)
 	BaseType_t xStatus = xQueueReceive(queue_can_receiveHandle, &canMSG, 0);
 	if (xStatus == pdPASS)
 	{
+		switch (canMSG.packet.canBuffer.canDataFields.ctrl0.value)
+		{
+			case CONFIG:
+
+				break;
+			case DATA:
+
+				break;
+			case SYNC:
+					if (canMSG.packet.canBuffer.canDataFields.ctrl1.value)
+					{
+						if (canMSG.packet.canID == 2)
+							testecountblack++;
+						if (canMSG.packet.canID == 5)
+							testecountnucleo++;
+						deviceState.deviceCount++;
+						deviceState.devices[canMSG.packet.canID - 2] = true;
+					}
+
+
+				break;
+
+		}
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 		// conseguiu tirar da fila
 		//	netconn_write(&com1, &canPack, sizeof(canPack), NETCONN_COPY);
@@ -106,7 +132,22 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 }
 
 
+int send_sync_request(void)
+{
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	CanPacket canPacket = { 0 } ;
+	canPacket.packet.canID = BROADCAST;
+	canPacket.packet.canBuffer.canDataFields.ctrl0.value = SYNC;
 
+
+	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
+	return 0;
+}
+
+int send_sync_status(void)
+{
+//	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
+}
 
 
 /***

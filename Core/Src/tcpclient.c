@@ -17,6 +17,10 @@ static struct netconn *conn;
 static struct netbuf *buf;
 static ip_addr_t *addr, dest_addr;
 static unsigned short port, dest_port;
+extern osMessageQId queue_tcp_sendHandle;
+bool Connected = false;
+
+TcpMessage tcpMessage = {0};
 char msgc[100];
 char smsgc[200];
 int indx = 0;
@@ -55,6 +59,7 @@ static void tcpinit_thread(void *arg)
 			if (connect_error == ERR_OK)
 			{
 				// Release the semaphore once the connection is successful
+				Connected = true;
 				sys_sem_signal(&tcpsem);
 				while (1)
 				{
@@ -113,18 +118,23 @@ void tcpsend (char *data)
 }
 
 
-//static void tcpsend_thread (void *arg)
-//{
-//	for (;;)
-//	{
-//		sprintf (smsgc, "index value = %d\n", indx++);
-//		// semaphore must be taken before accessing the tcpsend function
-//		sys_arch_sem_wait(&tcpsem, 500);
-//		// send the data to the server
-//		tcpsend(smsgc);
-//		osDelay(500);
-//	}
-//}
+void SendTCP_MSG(void const * argument)
+{
+  /* USER CODE BEGIN SendTCP_MSG */
+	TcpMessage tcpMessage;
+  /* Infinite loop */
+  for(;;)
+  {
+
+	BaseType_t xStatus = xQueueReceive(queue_tcp_sendHandle, &tcpMessage.tcpMsg, 0);
+	if (xStatus == pdPASS)
+	{
+		tcpsend(tcpMessage.tcpMsg);
+	}
+    osDelay(1);
+  }
+  /* USER CODE END SendTCP_MSG */
+}
 
 
 

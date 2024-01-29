@@ -55,6 +55,19 @@ typedef union // Ini
 
 } CanFilterList;
 
+typedef struct _DeviceState
+{
+	bool devices[10]; // HABILITAR DE ACORDO COM device
+	uint8_t deviceCount;
+}DeviceState;
+
+enum MessageType
+{
+	CONFIG = 0,
+	DATA   = 1,
+	SYNC   = 2
+};
+
 typedef struct control
 {
 	bool bit0 : 1;

@@ -38,10 +38,13 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 struct netconn com1 = {0};
+extern bool Connected;
 uint8_t canMessage = 0;
 struct Queue* queue;
-extern osMessageQId CAN_MessageHandle;
 extern sys_sem_t tcpsem;
+extern osSemaphoreId SyncSemaphoreHandle;
+extern osMessageQId queue_tcp_sendHandle;
+extern osMessageQId queue_can_sendHandle;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -61,6 +64,8 @@ uint8_t uartRxBuffer[8] = {0}; //buffer recebido pela serial
 uint8_t canRxBuffer [8] = {0}; //buffer recebido pela interface CAN
 extern struct tcp_pcb *tpcb;
 extern struct tcp_server_struct *es;
+
+DeviceState deviceState = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -105,8 +110,11 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN1_Init();
   MX_TIM2_Init();
+  MX_TIM3_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim2);
+
 
   /* USER CODE END 2 */
 
@@ -192,17 +200,41 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN StartDefaultTask */
   int indx = 0;
   char smsgc[200];
+  osDelay(1000);
+  HAL_TIM_Base_Start_IT(&htim3);
   /* Infinite loop */
   for(;;)
   {
-	sprintf (smsgc, "index value = %d\n", indx++);
-	// semaphore must be taken before accessing the tcpsend function
-	sys_arch_sem_wait(&tcpsem, 500);
-	// send the data to the server
-	tcpsend(smsgc);
+//	sprintf (smsgc, "index value = %d\n", indx++);
+//	// semaphore must be taken before accessing the tcpsend function
+//	sys_arch_sem_wait(&tcpsem, 500);
+//	// send the data to the server
+//	tcpsend(smsgc);
 	osDelay(50);
   }
   /* USER CODE END StartDefaultTask */
+}
+
+
+void buildMessage(uint8_t MessageType, void *data, char *result)
+{
+	switch (MessageType)
+	{
+		case SYNC:
+			DeviceState *state = (DeviceState*)data;
+			// Create the string
+			int writen = sprintf(result, "@$%d$", MessageType);
+			writen += sprintf(result + writen, "&%d", state->deviceCount);
+			for (int i = 0; i < 10; ++i) {
+				// Concatenate the data elements to the string
+				writen += sprintf(result + writen, "&%d", state->devices[i]);
+			}
+			// Add the final exclamation mark
+			strcat(result, "&!");
+
+			break;
+
+	}
 }
 
 /* USER CODE END 4 */
@@ -226,7 +258,45 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
   if (htim->Instance == TIM2)
   {
-	  __NOP();
+    __NOP();
+  }
+
+  if (htim->Instance == TIM3)
+  {
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	CanPacket canPacket = {0};
+
+	canPacket.packet.canID = BROADCAST;
+	canPacket.packet.canBuffer.canDataFields.ctrl0.value = SYNC;
+
+	memset(&deviceState, 0, sizeof(deviceState));
+
+	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
+
+	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+	__HAL_TIM_CLEAR_IT(&htim4 ,TIM_IT_UPDATE);
+	HAL_TIM_Base_Start_IT(&htim4);
+  }
+
+  if (htim->Instance == TIM4)
+  {
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	char tcpmsg [64] = {0};
+//	deviceState.deviceCount = 2;
+//	deviceState.devices[4] = 1;
+//	deviceState.devices[8] = 1;
+	buildMessage(SYNC, &deviceState, tcpmsg);
+
+    HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+    __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
+	HAL_TIM_Base_Stop_IT(&htim4);
+	//Pegar semaforo
+
+	if (Connected)
+		xQueueSendToBackFromISR(queue_tcp_sendHandle, &tcpmsg, &xHigherPriorityTaskWoken);
+
+
+
   }
   /* USER CODE END Callback 1 */
 }
