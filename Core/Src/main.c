@@ -65,7 +65,7 @@ uint8_t canRxBuffer [8] = {0}; //buffer recebido pela interface CAN
 extern struct tcp_pcb *tpcb;
 extern struct tcp_server_struct *es;
 
-DeviceState deviceState = {0};
+extern device devices;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -221,19 +221,35 @@ void buildMessage(uint8_t MessageType, void *data, char *result)
 	switch (MessageType)
 	{
 		case SYNC:
-			DeviceState *state = (DeviceState*)data;
-			// Create the string
-			int writen = sprintf(result, "@$%d$", MessageType);
-			writen += sprintf(result + writen, "&%d", state->deviceCount);
-			for (int i = 0; i < 10; ++i) {
-				// Concatenate the data elements to the string
-				writen += sprintf(result + writen, "&%d", state->devices[i]);
+			device *state = (device*)data;
+			uint8_t deviceCount = 0;
+			for (int i = 0; i < MAX_DEVICES; i++)
+			{
+				if (state[i].deviceSync)
+				{
+					deviceCount++;
+				}
 			}
-			// Add the final exclamation mark
+			int writenSYNC = sprintf(result, "@$%d$", MessageType);
+			writenSYNC += sprintf(result + writenSYNC, "&%d", deviceCount);
+			for (int i = 0; i < MAX_DEVICES; ++i)
+			{
+				writenSYNC += sprintf(result + writenSYNC, "&%d", state->deviceSync);
+			}
 			strcat(result, "&!");
 
 			break;
+		case DATA:
+			device *sensorData = (device*)data;
+			int writenDATA = sprintf(result, "@$%d$", MessageType);
+			for (int i = 0; i < MAX_SENSORS; ++i)
+			{
+				writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorUpdated.bit[i]);
+				writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorData[i+8]);
+			}
+			strcat(result, "&!");
 
+			break;
 	}
 }
 
@@ -269,7 +285,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	canPacket.packet.canID = BROADCAST;
 	canPacket.packet.canBuffer.canDataFields.ctrl0.value = SYNC;
 
-	memset(&deviceState, 0, sizeof(deviceState));
+	memset(&devices.deviceSync, 0, sizeof(devices.deviceSync));
+//	memset(&devices.activeSensorNumber, 0, sizeof(devices.activeSensorNumber));
 
 	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
 
@@ -282,12 +299,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	char tcpmsg [64] = {0};
-//	deviceState.deviceCount = 2;
-//	deviceState.devices[4] = 1;
-//	deviceState.devices[8] = 1;
-	buildMessage(SYNC, &deviceState, tcpmsg);
+	buildMessage(SYNC, &devices, tcpmsg);
 
-    HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+    HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin); //  debug
+
     __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
 	HAL_TIM_Base_Stop_IT(&htim4);
 	//Pegar semaforo

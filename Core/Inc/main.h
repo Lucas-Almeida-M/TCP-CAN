@@ -37,6 +37,8 @@ extern "C" {
 #include "string.h"
 #include "fila.h"
 #include "tcpclient.h"
+#include "can_app.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -58,7 +60,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void buildMessage(uint8_t MessageType, void *data, char *result);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

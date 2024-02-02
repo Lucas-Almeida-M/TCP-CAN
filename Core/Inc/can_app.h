@@ -10,5 +10,38 @@
 
 #include "can.h"
 #include "Parse.h"
+#include "stdbool.h"
+
+#define MAX_SENSORS 8
+#define MAX_DEVICES 10
+
+typedef struct _device
+{
+	uint8_t id;
+	bool deviceSync;
+	union
+	{
+		uint8_t value;
+		bool bit[8];
+	}activeSensorNumber;
+	union
+	{
+		uint8_t value;
+		bool bit[8];
+	}sensorUpdated;
+	uint32_t sensorData[8];
+
+}device;
+
+//typedef struct _DeviceState
+//{
+//	bool devices[10]; // HABILITAR DE ACORDO COM device
+//	uint8_t deviceCount;
+//}DeviceState;
+
+
+
+
+
 
 #endif /* INC_CAN_APP_H_ */

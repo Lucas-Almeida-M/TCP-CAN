@@ -10,6 +10,9 @@
 //#include "cmsis_os2.h"
 #include "cmsis_os.h"
 #include "queue.h"
+#include "main.h"
+
+
 
 int testecountnucleo = 0;
 int testecountblack = 0;
@@ -18,10 +21,11 @@ uint8_t canTX[8] = {};
 extern uint32_t TxMailbox;
 extern osMessageQId queue_can_sendHandle;
 extern osMessageQId queue_can_receiveHandle;
-extern DeviceState deviceState;
+extern osMessageQId queue_tcp_sendHandle;
 extern char tcpmsg[];
 
-
+uint8_t deviceCount = 0;
+device devices[10] = {0};
 
 /***
  * @fn void ReceiveCAN_MSG(void*)
@@ -32,7 +36,14 @@ extern char tcpmsg[];
 void ReceiveCAN_MSG(void *argument)
 {
   /* USER CODE BEGIN ProcessCAN_MSG */
+
+	for (int i =0; i < MAX_DEVICES; i++)
+	{
+		devices[i].id = i+2;
+	}
+
 	CanPacket canMSG = {0};
+	char msg[64] = {0};
   /* Infinite loop */
   for(;;)
   {
@@ -45,26 +56,33 @@ void ReceiveCAN_MSG(void *argument)
 
 				break;
 			case DATA:
-
-				break;
-			case SYNC:
-					if (canMSG.packet.canBuffer.canDataFields.ctrl1.value)
+				uint8_t j = 0;
+				for (int i = 0; i < MAX_SENSORS; i++)
+				{
+					if (canMSG.packet.canBuffer.canDataFields.ctrl1.bit[i])
 					{
-						if (canMSG.packet.canID == 2)
-							testecountblack++;
-						if (canMSG.packet.canID == 5)
-							testecountnucleo++;
-						deviceState.deviceCount++;
-						deviceState.devices[canMSG.packet.canID - 2] = true;
+						devices[canMSG.packet.canID - 2 ].sensorData[i] = ( (uint16_t)canMSG.packet.canBuffer.canDataFields.data[j] << 8) | (canMSG.packet.canBuffer.canDataFields.data[j+1]) ;
+						devices[canMSG.packet.canID - 2 ].sensorUpdated.bit[i] = true;
+						j+=2;
 					}
 
-
+					if (devices[canMSG.packet.canID - 2 ].activeSensorNumber.value == devices[canMSG.packet.canID - 2].sensorUpdated.value)
+					{
+						buildMessage(DATA, &devices[canMSG.packet.canID - 2], msg);
+						xQueueSendToBack(queue_tcp_sendHandle, msg, 0);
+						memset(msg, 0, sizeof(msg));
+						break;
+					}
+				}
 				break;
-
+			case SYNC:
+				devices[canMSG.packet.canID - 2].deviceSync = true;
+				devices[canMSG.packet.canID - 2].deviceSync = true;
+				devices[canMSG.packet.canID - 2].activeSensorNumber.value = canMSG.packet.canBuffer.canDataFields.ctrl1.value;
+				break;
 		}
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 		// conseguiu tirar da fila
-		//	netconn_write(&com1, &canPack, sizeof(canPack), NETCONN_COPY);
 
 	}
     osDelay(1);
@@ -90,10 +108,10 @@ void SendCAN_MSG(void *argument)
 	{
 		// conseguiu tirar da fila
 
-		TxHeader.StdId             = canMsg.packet.canID;      // ID do dispositivo
-		TxHeader.RTR               = CAN_RTR_DATA;       		//(Remote Transmission Request) especifica Remote Fraame ou Data Frame.
-		TxHeader.IDE               = CAN_ID_STD;    			//define o tipo de id (standard ou extended
-		TxHeader.DLC               = CAN_SIZE;      			//Tamanho do pacote 0 - 8 bytes
+		TxHeader.StdId             = canMsg.packet.canID;
+		TxHeader.RTR               = CAN_RTR_DATA;
+		TxHeader.IDE               = CAN_ID_STD;
+		TxHeader.DLC               = CAN_SIZE;
 		TxHeader.TransmitGlobalTime = DISABLE;
 		int status = HAL_CAN_AddTxMessage (&hcan1, &TxHeader, canMsg.packet.canBuffer.canData, &TxMailbox);
 		if(status)
