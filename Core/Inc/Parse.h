@@ -67,36 +67,17 @@ enum MessageType
 
 typedef struct candata
 {
-	union Ctrl0
-	{
-		bool bit[8];
-		uint8_t value;
-	}ctrl0;
-
-	union ctrl1
-	{
-		bool bit[8];
-		uint8_t value;
-	}ctrl1;
-
+	uint8_t ctrl0;
+	uint8_t ctrl1;
 	uint8_t data [CAN_SIZE - CAN_HEADER];
 }CanData;
 
-typedef union CANPACKET
+typedef struct
 {
-	uint8_t buffer[CAN_SIZE + 1];
-	struct
-	{
-		uint8_t canID;
-		union canbuf
-		{
-			CanData canDataFields;
-			uint8_t canData[8];
-		}canBuffer;
-
-	}packet;
-
+	uint8_t canID;
+	CanData canDataFields;
 } CanPacket;
+
 
 //typedef union UARTPACKET
 //{

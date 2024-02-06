@@ -216,10 +216,23 @@ void StartDefaultTask(void const * argument)
 }
 
 
-void buildMessage(uint8_t MessageType, void *data, char *result)
+void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 {
 	switch (MessageType)
 	{
+		case DATA:
+		device *sensorData = (device*)data;
+		int writenDATA = sprintf(result, "@#%d#", id);
+		writenDATA += sprintf(result + writenDATA, "$%d$", MessageType);
+		for (int i = 0; i < MAX_SENSORS; ++i)
+		{
+			writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorData[i]);
+		}
+		strcat(result, "&!");
+
+		break;
+
+
 		case SYNC:
 			device *state = (device*)data;
 			uint8_t deviceCount = 0;
@@ -230,27 +243,39 @@ void buildMessage(uint8_t MessageType, void *data, char *result)
 					deviceCount++;
 				}
 			}
-			int writenSYNC = sprintf(result, "@$%d$", MessageType);
+			int writenSYNC = sprintf(result, "@#%d#", id);
+			writenSYNC += sprintf(result + writenSYNC, "$%d$", MessageType);
 			writenSYNC += sprintf(result + writenSYNC, "&%d", deviceCount);
 			for (int i = 0; i < MAX_DEVICES; ++i)
 			{
-				writenSYNC += sprintf(result + writenSYNC, "&%d", state->deviceSync);
+				writenSYNC += sprintf(result + writenSYNC, "&%d", state[i].deviceSync);
 			}
 			strcat(result, "&!");
 
 			break;
-		case DATA:
-			device *sensorData = (device*)data;
-			int writenDATA = sprintf(result, "@$%d$", MessageType);
-			for (int i = 0; i < MAX_SENSORS; ++i)
-			{
-				writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorUpdated.bit[i]);
-				writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorData[i+8]);
-			}
-			strcat(result, "&!");
 
-			break;
 	}
+}
+
+void setbit(uint8_t *variable, int bitNumber, int value)
+{
+    if ((bitNumber < 0) || (bitNumber > 7))
+    {
+        return;
+    }
+
+    if (value == 1)
+    {
+        *variable |= (1 << bitNumber);
+    }
+    else if (value == 0)
+    {
+        *variable &= ~(1 << bitNumber);
+    }
+    else
+    {
+        return;
+    }
 }
 
 /* USER CODE END 4 */
@@ -282,8 +307,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	CanPacket canPacket = {0};
 
-	canPacket.packet.canID = BROADCAST;
-	canPacket.packet.canBuffer.canDataFields.ctrl0.value = SYNC;
+	canPacket.canID = BROADCAST;
+	canPacket.canDataFields.ctrl0 = SYNC;
 
 	memset(&devices.deviceSync, 0, sizeof(devices.deviceSync));
 //	memset(&devices.activeSensorNumber, 0, sizeof(devices.activeSensorNumber));
@@ -299,7 +324,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	char tcpmsg [64] = {0};
-	buildMessage(SYNC, &devices, tcpmsg);
+	buildMessage(SYNC, &devices, 0x0, tcpmsg);
 
     HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin); //  debug
 

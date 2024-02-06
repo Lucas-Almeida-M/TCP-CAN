@@ -19,16 +19,8 @@ typedef struct _device
 {
 	uint8_t id;
 	bool deviceSync;
-	union
-	{
-		uint8_t value;
-		bool bit[8];
-	}activeSensorNumber;
-	union
-	{
-		uint8_t value;
-		bool bit[8];
-	}sensorUpdated;
+	uint8_t activeSensorNumber;
+	uint8_t sensorUpdated;
 	uint32_t sensorData[8];
 
 }device;

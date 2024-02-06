@@ -50,7 +50,7 @@ void ReceiveCAN_MSG(void *argument)
 	BaseType_t xStatus = xQueueReceive(queue_can_receiveHandle, &canMSG, 0);
 	if (xStatus == pdPASS)
 	{
-		switch (canMSG.packet.canBuffer.canDataFields.ctrl0.value)
+ 		switch (canMSG.canDataFields.ctrl0)
 		{
 			case CONFIG:
 
@@ -59,16 +59,16 @@ void ReceiveCAN_MSG(void *argument)
 				uint8_t j = 0;
 				for (int i = 0; i < MAX_SENSORS; i++)
 				{
-					if (canMSG.packet.canBuffer.canDataFields.ctrl1.bit[i])
+					if (canMSG.canDataFields.ctrl1 & (1<<i) )
 					{
-						devices[canMSG.packet.canID - 2 ].sensorData[i] = ( (uint16_t)canMSG.packet.canBuffer.canDataFields.data[j] << 8) | (canMSG.packet.canBuffer.canDataFields.data[j+1]) ;
-						devices[canMSG.packet.canID - 2 ].sensorUpdated.bit[i] = true;
+						devices[canMSG.canID - 2 ].sensorData[i] = ( (uint16_t)canMSG.canDataFields.data[j] << 8) | (uint16_t)(canMSG.canDataFields.data[j+1]) ;
+						setbit(&devices[canMSG.canID - 2 ].sensorUpdated, i, 1);
 						j+=2;
 					}
 
-					if (devices[canMSG.packet.canID - 2 ].activeSensorNumber.value == devices[canMSG.packet.canID - 2].sensorUpdated.value)
+					if (devices[canMSG.canID - 2 ].activeSensorNumber == devices[canMSG.canID - 2].sensorUpdated)
 					{
-						buildMessage(DATA, &devices[canMSG.packet.canID - 2], msg);
+						buildMessage(DATA, &devices[canMSG.canID - 2], canMSG.canID, msg);
 						xQueueSendToBack(queue_tcp_sendHandle, msg, 0);
 						memset(msg, 0, sizeof(msg));
 						break;
@@ -76,9 +76,9 @@ void ReceiveCAN_MSG(void *argument)
 				}
 				break;
 			case SYNC:
-				devices[canMSG.packet.canID - 2].deviceSync = true;
-				devices[canMSG.packet.canID - 2].deviceSync = true;
-				devices[canMSG.packet.canID - 2].activeSensorNumber.value = canMSG.packet.canBuffer.canDataFields.ctrl1.value;
+				devices[canMSG.canID - 2].deviceSync = true;
+				devices[canMSG.canID - 2].deviceSync = true;
+				devices[canMSG.canID - 2].activeSensorNumber = canMSG.canDataFields.ctrl1;
 				break;
 		}
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -100,6 +100,7 @@ void SendCAN_MSG(void *argument)
 {
   /* USER CODE BEGIN SendCAN_MSG */
 	CanPacket canMsg = {0};
+	uint8_t buffer[8] = {0};
   /* Infinite loop */
   for(;;)
   {
@@ -108,12 +109,14 @@ void SendCAN_MSG(void *argument)
 	{
 		// conseguiu tirar da fila
 
-		TxHeader.StdId             = canMsg.packet.canID;
+		TxHeader.StdId             = canMsg.canID;
 		TxHeader.RTR               = CAN_RTR_DATA;
 		TxHeader.IDE               = CAN_ID_STD;
 		TxHeader.DLC               = CAN_SIZE;
 		TxHeader.TransmitGlobalTime = DISABLE;
-		int status = HAL_CAN_AddTxMessage (&hcan1, &TxHeader, canMsg.packet.canBuffer.canData, &TxMailbox);
+
+		memcpy(buffer, &canMsg.canDataFields, sizeof(buffer));
+		int status = HAL_CAN_AddTxMessage (&hcan1, &TxHeader, buffer,  &TxMailbox);
 		if(status)
 		{
 			Error_Handler();
@@ -141,8 +144,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	CanPacket canPacket = { 0 } ;
 
 	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, canRX);
-	canPacket.packet.canID = RxHeader.StdId;
-	memcpy(&canPacket.packet.canBuffer, canRX, sizeof(canRX));
+	canPacket.canID = RxHeader.StdId;
+	memcpy(&canPacket.canDataFields, canRX, sizeof(canRX));
 	xQueueSendToBackFromISR(queue_can_receiveHandle, &canPacket, &xHigherPriorityTaskWoken);
 
 //	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -154,8 +157,8 @@ int send_sync_request(void)
 {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	CanPacket canPacket = { 0 } ;
-	canPacket.packet.canID = BROADCAST;
-	canPacket.packet.canBuffer.canDataFields.ctrl0.value = SYNC;
+	canPacket.canID = BROADCAST;
+	canPacket.canDataFields.ctrl0 = SYNC;
 
 
 	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
