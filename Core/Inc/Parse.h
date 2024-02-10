@@ -59,9 +59,10 @@ typedef union // Ini
 
 enum MessageType
 {
-	CONFIG = 0,
-	DATA   = 1,
-	SYNC   = 2
+	CONFIG = 0x0,
+	DATA   = 0x1,
+	SYNC   = 0x2,
+	REBOOT = 0x3
 };
 
 

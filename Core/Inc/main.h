@@ -62,11 +62,13 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result);
 void setbit(uint8_t *variable, int bitNumber, int value);
+void reboot_device(uint8_t id);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
 #define USER_Btn_Pin GPIO_PIN_13
 #define USER_Btn_GPIO_Port GPIOC
+#define USER_Btn_EXTI_IRQn EXTI15_10_IRQn
 #define MCO_Pin GPIO_PIN_0
 #define MCO_GPIO_Port GPIOH
 #define RMII_MDC_Pin GPIO_PIN_1

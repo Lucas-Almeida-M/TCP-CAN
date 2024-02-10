@@ -53,7 +53,8 @@ void ReceiveCAN_MSG(void *argument)
  		switch (canMSG.canDataFields.ctrl0)
 		{
 			case CONFIG:
-
+				uint8_t teste = 0;
+				teste = canMSG.canDataFields.data[0];
 				break;
 			case DATA:
 				uint8_t j = 0;

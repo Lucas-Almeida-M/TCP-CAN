@@ -198,8 +198,6 @@ void StartDefaultTask(void const * argument)
   MX_LWIP_Init();
   tcpclient_init();
   /* USER CODE BEGIN StartDefaultTask */
-  int indx = 0;
-  char smsgc[200];
   osDelay(1000);
   HAL_TIM_Base_Start_IT(&htim3);
   /* Infinite loop */
@@ -210,7 +208,9 @@ void StartDefaultTask(void const * argument)
 //	sys_arch_sem_wait(&tcpsem, 500);
 //	// send the data to the server
 //	tcpsend(smsgc);
-	osDelay(50);
+
+	osDelay(5000);
+
   }
   /* USER CODE END StartDefaultTask */
 }
@@ -277,6 +277,32 @@ void setbit(uint8_t *variable, int bitNumber, int value)
         return;
     }
 }
+
+void reboot_device(uint8_t id)
+{
+	CanPacket canPacket = {0};
+	canPacket.canID = 0x0;
+	canPacket.canDataFields.ctrl0 = REBOOT;
+	xQueueSendToBack(queue_can_sendHandle, &canPacket ,0);
+}
+
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	switch (GPIO_Pin)
+	{
+		case USER_Btn_Pin:
+			HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			CanPacket canTesteCfg = {0};
+			canTesteCfg.canID = 0;
+			canTesteCfg.canDataFields.ctrl0 =  CONFIG;
+			canTesteCfg.canDataFields.data[0] = 0x3;
+			xQueueSendToBackFromISR(queue_can_sendHandle, &canTesteCfg, &xHigherPriorityTaskWoken);
+	}
+}
+
 
 /* USER CODE END 4 */
 
