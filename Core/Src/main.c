@@ -37,6 +37,9 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+
+bool testcfg = 0;
+bool clientOnline = 0;
 struct netconn com1 = {0};
 extern bool Connected;
 uint8_t canMessage = 0;
@@ -198,7 +201,8 @@ void StartDefaultTask(void const * argument)
   MX_LWIP_Init();
   tcpclient_init();
   /* USER CODE BEGIN StartDefaultTask */
-  osDelay(1000);
+  osDelay(2000);
+  clientOnline = 1;
   HAL_TIM_Base_Start_IT(&htim3);
   /* Infinite loop */
   for(;;)
@@ -298,7 +302,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			CanPacket canTesteCfg = {0};
 			canTesteCfg.canID = 0;
 			canTesteCfg.canDataFields.ctrl0 =  CONFIG;
-			canTesteCfg.canDataFields.data[0] = 0x3;
+			if (testcfg)
+			{
+				canTesteCfg.canDataFields.data[0] = 0x38;
+				testcfg = 0;
+			}
+			else
+			{
+				canTesteCfg.canDataFields.data[0] = 0xff;
+				testcfg = 1;
+			}
+
 			xQueueSendToBackFromISR(queue_can_sendHandle, &canTesteCfg, &xHigherPriorityTaskWoken);
 	}
 }

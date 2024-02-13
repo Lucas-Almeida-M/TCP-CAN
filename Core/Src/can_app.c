@@ -53,8 +53,11 @@ void ReceiveCAN_MSG(void *argument)
  		switch (canMSG.canDataFields.ctrl0)
 		{
 			case CONFIG:
-				uint8_t teste = 0;
-				teste = canMSG.canDataFields.data[0];
+				if (canMSG.canDataFields.ctrl1 == 1)
+				{
+					memset(&devices[canMSG.canID - 2 ].sensorUpdated, 0 ,sizeof(devices[canMSG.canID - 2 ].sensorUpdated) );
+					memset(&devices[canMSG.canID - 2].sensorData, 0 , sizeof(devices[canMSG.canID - 2].sensorData));
+				}
 				break;
 			case DATA:
 				uint8_t j = 0;
@@ -72,6 +75,8 @@ void ReceiveCAN_MSG(void *argument)
 						buildMessage(DATA, &devices[canMSG.canID - 2], canMSG.canID, msg);
 						xQueueSendToBack(queue_tcp_sendHandle, msg, 0);
 						memset(msg, 0, sizeof(msg));
+						memset(&devices[canMSG.canID - 2 ].sensorUpdated, 0 ,sizeof(devices[canMSG.canID - 2 ].sensorUpdated) );
+						memset(&devices[canMSG.canID - 2].sensorData, 0 , sizeof(devices[canMSG.canID - 2].sensorData));
 						break;
 					}
 				}

@@ -19,6 +19,7 @@ static ip_addr_t *addr, dest_addr;
 static unsigned short port, dest_port;
 extern osMessageQId queue_tcp_sendHandle;
 bool Connected = false;
+extern bool clientOnline;
 
 TcpMessage tcpMessage = {0};
 char msgc[100];
@@ -111,10 +112,14 @@ static void tcpinit_thread(void *arg)
 
 void tcpsend (char *data)
 {
-	// send the data to the connected connection
-	netconn_write(conn, data, strlen(data), NETCONN_COPY);
-	// relaese the semaphore
-	sys_sem_signal(&tcpsem);
+	if (clientOnline)
+	{
+		// send the data to the connected connection
+		netconn_write(conn, data, strlen(data), NETCONN_COPY);
+		// relaese the semaphore
+		sys_sem_signal(&tcpsem);
+	}
+
 }
 
 
