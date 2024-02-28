@@ -68,7 +68,7 @@ uint8_t canRxBuffer [8] = {0}; //buffer recebido pela interface CAN
 extern struct tcp_pcb *tpcb;
 extern struct tcp_server_struct *es;
 
-extern device devices;
+extern device devices[];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -230,7 +230,14 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 		writenDATA += sprintf(result + writenDATA, "$%d$", MessageType);
 		for (int i = 0; i < MAX_SENSORS; ++i)
 		{
-			writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorData[i]);
+			if( (devices[id - 2].activeSensorNumber) & (1<<i))
+			{
+				writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorData[i]);
+			}
+			else
+			{
+				writenDATA += sprintf(result + writenDATA, "&null");
+			}
 		}
 		strcat(result, "&!");
 
@@ -349,8 +356,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	canPacket.canID = BROADCAST;
 	canPacket.canDataFields.ctrl0 = SYNC;
-
-	memset(&devices.deviceSync, 0, sizeof(devices.deviceSync));
+//	memset(&devices->deviceSync, 0, sizeof(devices->deviceSync));
 //	memset(&devices.activeSensorNumber, 0, sizeof(devices.activeSensorNumber));
 
 	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
