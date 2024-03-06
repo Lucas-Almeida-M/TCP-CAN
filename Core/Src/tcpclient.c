@@ -148,5 +148,4 @@ void tcpclient_init (void)
 {
 	sys_sem_new(&tcpsem, 0);  // the semaphore would prevent simultaneous access to tcpsend
 	sys_thread_new("tcpinit_thread", tcpinit_thread, NULL, DEFAULT_THREAD_STACKSIZE,osPriorityNormal);
-//	sys_thread_new("tcpsend_thread", tcpsend_thread, NULL, DEFAULT_THREAD_STACKSIZE,osPriorityNormal);
 }

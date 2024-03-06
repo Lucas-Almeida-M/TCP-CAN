@@ -30,7 +30,7 @@ extern CAN_TxHeaderTypeDef TxHeader;
 extern CAN_RxHeaderTypeDef RxHeader;
 
 
-typedef union // Ini
+typedef union
 {
 
 	enum FilterIds
@@ -109,6 +109,7 @@ void ConfigFilterList (uint32_t id1, uint32_t id2, uint32_t id3, uint32_t id4, u
 
 void LoadFilterList(CanFilterList *filterIdList);
 void InitFilterList(uint32_t *idList, uint8_t numFilters, uint8_t filterScale);
+void CAN_ConfigFilter(void);
 
 
 #endif /* SRC_PARSER_H_ */

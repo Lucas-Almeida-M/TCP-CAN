@@ -17,22 +17,6 @@ uint32_t TxMailbox;
 CAN_FilterTypeDef *canFilterConfig1;
 
 
-
-
-// validar o can ID e
-bool ValidatePacket(uint8_t canID)
-{
-    for (int validationId = 0; validationId < CANID_COUNT; validationId++)
-    {
-        if (canID == validationId)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-
 bool CanWritePacket(uint32_t id, uint8_t *buffer, uint8_t can_rtr, uint16_t tamanho)
 {
 
@@ -154,6 +138,46 @@ void InitFilterList(uint32_t *idList, uint8_t numFilters, uint8_t filterScale)
 	}
 }
 
+void CAN_ConfigFilter(void)
+{
+ 	CAN_FilterTypeDef filterConfig = {0};
+
+	filterConfig.FilterActivation = ENABLE;
+	filterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+
+	filterConfig.FilterBank = 0;
+    filterConfig.FilterIdHigh = 0xff << 5;
+    filterConfig.FilterIdLow = 0x00  << 5;
+    filterConfig.FilterMaskIdHigh = 0xff << 5;
+    filterConfig.FilterMaskIdLow = 0x00 << 5;
+
+	HAL_CAN_ConfigFilter(&hcan1, &filterConfig);
+
+	filterConfig.FilterBank = 1;
+	filterConfig.FilterIdHigh = 0xfe << 5;
+	filterConfig.FilterIdLow = 0x00  << 5;
+	filterConfig.FilterMaskIdHigh = 0xfe << 5;
+	filterConfig.FilterMaskIdLow = 0x00 << 5;
+
+	HAL_CAN_ConfigFilter(&hcan1, &filterConfig);
+
+	filterConfig.FilterBank = 2;
+	filterConfig.FilterIdHigh = 0x00 << 5;
+	filterConfig.FilterIdLow = 0x00  << 5;
+	filterConfig.FilterMaskIdHigh = 0x00 << 5;
+	filterConfig.FilterMaskIdLow = 0x00 << 5;
+
+	HAL_CAN_ConfigFilter(&hcan1, &filterConfig);
+
+	filterConfig.FilterBank = 3;
+	filterConfig.FilterIdHigh = 0x01 << 5;
+	filterConfig.FilterIdLow = 0x00  << 5;
+	filterConfig.FilterMaskIdHigh = 0x01 << 5;
+	filterConfig.FilterMaskIdLow = 0x00 << 5;
+
+	HAL_CAN_ConfigFilter(&hcan1, &filterConfig);
+
+}
 
 
 

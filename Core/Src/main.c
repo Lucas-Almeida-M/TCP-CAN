@@ -230,7 +230,7 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 		writenDATA += sprintf(result + writenDATA, "$%d$", MessageType);
 		for (int i = 0; i < MAX_SENSORS; ++i)
 		{
-			if( (devices[id - 2].activeSensorNumber) & (1<<i))
+			if( (devices[id - HEADER_ID].activeSensorNumber) & (1<<i))
 			{
 				writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorData[i]);
 			}
@@ -247,6 +247,7 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 		case SYNC:
 			device *state = (device*)data;
 			uint8_t deviceCount = 0;
+			int lenData = 0;
 			for (int i = 0; i < MAX_DEVICES; i++)
 			{
 				if (state[i].deviceSync)
@@ -256,12 +257,25 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 			}
 			int writenSYNC = sprintf(result, "@#%d#", id);
 			writenSYNC += sprintf(result + writenSYNC, "$%d$", MessageType);
-			writenSYNC += sprintf(result + writenSYNC, "&%d", deviceCount);
+//			writenSYNC += sprintf(result + writenSYNC, "&%d", deviceCount);
 			for (int i = 0; i < MAX_DEVICES; ++i)
 			{
-				writenSYNC += sprintf(result + writenSYNC, "&%d", state[i].deviceSync);
+				if (state[i].deviceSync)
+				{
+					writenSYNC += sprintf(result + writenSYNC, "&%d", i + HEADER_ID);
+					lenData++;
+				}
+
 			}
-			strcat(result, "&!");
+			if (lenData > 0)
+			{
+				strcat(result, "&!");
+			}
+			else
+			{
+				strcat(result, "&&!");
+			}
+
 
 			break;
 
@@ -292,7 +306,7 @@ void setbit(uint8_t *variable, int bitNumber, int value)
 void reboot_device(uint8_t id)
 {
 	CanPacket canPacket = {0};
-	canPacket.canID = 0x0;
+	canPacket.canID = id;
 	canPacket.canDataFields.ctrl0 = REBOOT;
 	xQueueSendToBack(queue_can_sendHandle, &canPacket ,0);
 }
@@ -307,7 +321,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 			CanPacket canTesteCfg = {0};
-			canTesteCfg.canID = 0;
+			canTesteCfg.canID = BROADCAST;
 			canTesteCfg.canDataFields.ctrl0 =  CONFIG;
 			if (testcfg)
 			{
@@ -356,8 +370,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	canPacket.canID = BROADCAST;
 	canPacket.canDataFields.ctrl0 = SYNC;
-//	memset(&devices->deviceSync, 0, sizeof(devices->deviceSync));
-//	memset(&devices.activeSensorNumber, 0, sizeof(devices.activeSensorNumber));
+	for (int i = 0; i < MAX_DEVICES; i++)
+	{
+		devices[i].deviceSync = 0;
+	}
+	canPacket.canID = BROADCAST;
+	canPacket.canDataFields.ctrl0 = SYNC;
 
 	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
 
@@ -370,7 +388,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	char tcpmsg [64] = {0};
-	buildMessage(SYNC, &devices, 0x0, tcpmsg);
+	buildMessage(SYNC, &devices, BROADCAST, tcpmsg);
 
     HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin); //  debug
 

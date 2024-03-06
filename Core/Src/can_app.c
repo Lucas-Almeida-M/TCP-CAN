@@ -7,15 +7,11 @@
 
 
 #include "can_app.h"
-//#include "cmsis_os2.h"
 #include "cmsis_os.h"
 #include "queue.h"
 #include "main.h"
 
 
-
-int testecountnucleo = 0;
-int testecountblack = 0;
 uint8_t canRX[8] = {};
 uint8_t canTX[8] = {};
 extern uint32_t TxMailbox;
@@ -37,9 +33,9 @@ void ReceiveCAN_MSG(void *argument)
 {
   /* USER CODE BEGIN ProcessCAN_MSG */
 
-	for (int i =0; i < MAX_DEVICES; i++)
+	for (int i = 0; i < MAX_DEVICES; i++)
 	{
-		devices[i].id = i+2;
+		devices[i].id = i + HEADER_ID;
 	}
 
 	CanPacket canMSG = {0};
@@ -55,8 +51,8 @@ void ReceiveCAN_MSG(void *argument)
 			case CONFIG:
 				if (canMSG.canDataFields.ctrl1 == 1)
 				{
-					memset(&devices[canMSG.canID - 2 ].sensorUpdated, 0 ,sizeof(devices[canMSG.canID - 2 ].sensorUpdated) );
-					memset(&devices[canMSG.canID - 2].sensorData, 0 , sizeof(devices[canMSG.canID - 2].sensorData));
+					memset(&devices[canMSG.canID - HEADER_ID ].sensorUpdated, 0 ,sizeof(devices[canMSG.canID - HEADER_ID ].sensorUpdated) );
+					memset(&devices[canMSG.canID - HEADER_ID].sensorData, 0 , sizeof(devices[canMSG.canID - HEADER_ID].sensorData));
 				}
 				break;
 			case DATA:
@@ -65,26 +61,25 @@ void ReceiveCAN_MSG(void *argument)
 				{
 					if (canMSG.canDataFields.ctrl1 & (1<<i) )
 					{
-						devices[canMSG.canID - 2 ].sensorData[i] = ( (uint16_t)canMSG.canDataFields.data[j] << 8) | (uint16_t)(canMSG.canDataFields.data[j+1]) ;
-						setbit(&devices[canMSG.canID - 2 ].sensorUpdated, i, 1);
+						devices[canMSG.canID - HEADER_ID ].sensorData[i] = ( (uint16_t)canMSG.canDataFields.data[j] << 8) | (uint16_t)(canMSG.canDataFields.data[j+1]) ;
+						setbit(&devices[canMSG.canID - HEADER_ID ].sensorUpdated, i, 1);
 						j+=2;
 					}
 
-					if (devices[canMSG.canID - 2 ].activeSensorNumber == devices[canMSG.canID - 2].sensorUpdated)
+					if (devices[canMSG.canID - HEADER_ID ].activeSensorNumber == devices[canMSG.canID - HEADER_ID].sensorUpdated)
 					{
-						buildMessage(DATA, &devices[canMSG.canID - 2], canMSG.canID, msg);
+						buildMessage(DATA, &devices[canMSG.canID - HEADER_ID], canMSG.canID, msg);
 						xQueueSendToBack(queue_tcp_sendHandle, msg, 0);
 						memset(msg, 0, sizeof(msg));
-						memset(&devices[canMSG.canID - 2 ].sensorUpdated, 0 ,sizeof(devices[canMSG.canID - 2 ].sensorUpdated) );
-						memset(&devices[canMSG.canID - 2].sensorData, 0 , sizeof(devices[canMSG.canID - 2].sensorData));
+						memset(&devices[canMSG.canID - HEADER_ID].sensorUpdated, 0 ,sizeof(devices[canMSG.canID - HEADER_ID ].sensorUpdated) );
+						memset(&devices[canMSG.canID - HEADER_ID].sensorData, 0 , sizeof(devices[canMSG.canID - HEADER_ID].sensorData));
 						break;
 					}
 				}
 				break;
 			case SYNC:
-				devices[canMSG.canID - 2].deviceSync = true;
-				devices[canMSG.canID - 2].deviceSync = true;
-				devices[canMSG.canID - 2].activeSensorNumber = canMSG.canDataFields.ctrl1;
+				devices[canMSG.canID - HEADER_ID].deviceSync = true;
+				devices[canMSG.canID - HEADER_ID].activeSensorNumber = canMSG.canDataFields.ctrl1;
 				break;
 		}
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -185,11 +180,11 @@ int send_sync_status(void)
  */
 void sendCanMsg_test(int delay)
 {
-	  uint8_t tx[7] = {1,2,3,4,5,6,7};
+	  uint8_t tx[8] = {0,1,2,3,4,5,6,7};
 	  TxHeader.StdId             = BROADCAST;     // ID do dispositivo
 	  TxHeader.RTR               = CAN_RTR_DATA;       //(Remote Transmission Request) especifica Remote Fraame ou Data Frame.
 	  TxHeader.IDE               = CAN_ID_STD;    //define o tipo de id (standard ou extended
-	  TxHeader.DLC               = 7;      //Tamanho do pacote 0 - 8 bytes
+	  TxHeader.DLC               = 8;      //Tamanho do pacote 0 - 8 bytes
 	  TxHeader.TransmitGlobalTime = DISABLE;
 
 	  int status = HAL_CAN_AddTxMessage(&hcan1, &TxHeader, tx, &TxMailbox);

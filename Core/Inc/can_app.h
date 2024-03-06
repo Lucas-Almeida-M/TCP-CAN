@@ -14,6 +14,7 @@
 
 #define MAX_SENSORS 8
 #define MAX_DEVICES 10
+#define HEADER_ID   2
 
 typedef struct _device
 {
