@@ -10,6 +10,7 @@
 #include "cmsis_os.h"
 #include "queue.h"
 #include "main.h"
+#include "debug_level.h"
 
 
 uint8_t canRX[8] = {};
@@ -22,6 +23,7 @@ extern char tcpmsg[];
 
 uint8_t deviceCount = 0;
 device devices[10] = {0};
+char CanMsgDebug [64] = {0};
 
 /***
  * @fn void ReceiveCAN_MSG(void*)
@@ -46,6 +48,13 @@ void ReceiveCAN_MSG(void *argument)
 	BaseType_t xStatus = xQueueReceive(queue_can_receiveHandle, &canMSG, 0);
 	if (xStatus == pdPASS)
 	{
+		if (DEBUG_LEVEL > NONE)
+		{
+			sprintf(CanMsgDebug, "CAN message received [ID: %d] [MT: %d] \r\n", canMSG.canID, canMSG.canDataFields.ctrl0);
+			print_debug (CanMsgDebug);
+			memset(CanMsgDebug, 0, sizeof(CanMsgDebug));
+		}
+
  		switch (canMSG.canDataFields.ctrl0)
 		{
 			case CONFIG:
@@ -80,6 +89,7 @@ void ReceiveCAN_MSG(void *argument)
 			case SYNC:
 				devices[canMSG.canID - HEADER_ID].deviceSync = true;
 				devices[canMSG.canID - HEADER_ID].activeSensorNumber = canMSG.canDataFields.ctrl1;
+				osDelay(5);
 				break;
 		}
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -100,30 +110,38 @@ void ReceiveCAN_MSG(void *argument)
 void SendCAN_MSG(void *argument)
 {
   /* USER CODE BEGIN SendCAN_MSG */
-	CanPacket canMsg = {0};
+	CanPacket canMSG = {0};
 	uint8_t buffer[8] = {0};
   /* Infinite loop */
   for(;;)
   {
-	BaseType_t xStatus = xQueueReceive(queue_can_sendHandle, &canMsg, 0);
+	BaseType_t xStatus = xQueueReceive(queue_can_sendHandle, &canMSG, 0);
 	if (xStatus == pdPASS)
 	{
 		// conseguiu tirar da fila
 
-		TxHeader.StdId             = canMsg.canID;
+		TxHeader.StdId             = canMSG.canID;
 		TxHeader.RTR               = CAN_RTR_DATA;
 		TxHeader.IDE               = CAN_ID_STD;
 		TxHeader.DLC               = CAN_SIZE;
 		TxHeader.TransmitGlobalTime = DISABLE;
 
-		memcpy(buffer, &canMsg.canDataFields, sizeof(buffer));
+		memcpy(buffer, &canMSG.canDataFields, sizeof(buffer));
 		int status = HAL_CAN_AddTxMessage (&hcan1, &TxHeader, buffer,  &TxMailbox);
 		if(status)
 		{
 			Error_Handler();
 		}
 
+		if (DEBUG_LEVEL > NONE)
+		{
+			sprintf(CanMsgDebug, "CAN message sent [ID: %d] [MT: %d] \r\n", canMSG.canID, canMSG.canDataFields.ctrl0);
+			print_debug (CanMsgDebug);
+			memset(CanMsgDebug, 0, sizeof(CanMsgDebug));
+		}
 	}
+
+
     osDelay(1);
   }
   /* USER CODE END SendCAN_MSG */
