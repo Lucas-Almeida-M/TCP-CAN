@@ -80,32 +80,8 @@ typedef struct
 } CanPacket;
 
 
-//typedef union UARTPACKET
-//{
-//	uint8_t buffer[CAN_SIZE + 1];
-//	struct
-//	{
-//		uint8_t canID;
-//		uint8_t seq;
-//		uint8_t crtl;
-//		uint8_t data [(CAN_SIZE + 1) - CAN_HEADER];
-//	}packet;
-//
-//
-//}UartPacket;
-
-
-
-bool ValidatePacket(uint8_t canID);
-
-
-void DecodeCanPacket(uint32_t canID, CanPacket *canPacket, uint8_t *buffer);
 bool CanWritePacket(uint32_t id, uint8_t *buffer, uint8_t can_rtr, uint16_t tamanho);
 void ConfigFilterList (uint32_t id1, uint32_t id2, uint32_t id3, uint32_t id4, uint32_t filterBank, uint8_t idType, uint8_t filterScale);
-
-
-
-
 
 void LoadFilterList(CanFilterList *filterIdList);
 void InitFilterList(uint32_t *idList, uint8_t numFilters, uint8_t filterScale);

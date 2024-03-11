@@ -167,7 +167,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	memcpy(&canPacket.canDataFields, canRX, sizeof(canRX));
 	xQueueSendToBackFromISR(queue_can_receiveHandle, &canPacket, &xHigherPriorityTaskWoken);
 
-//	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
 
 }
 
@@ -184,11 +184,6 @@ int send_sync_request(void)
 	return 0;
 }
 
-int send_sync_status(void)
-{
-//	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
-}
-
 
 /***
  * @fn void sendCanMsg_test(int)
@@ -199,10 +194,10 @@ int send_sync_status(void)
 void sendCanMsg_test(int delay)
 {
 	  uint8_t tx[8] = {0,1,2,3,4,5,6,7};
-	  TxHeader.StdId             = BROADCAST;     // ID do dispositivo
-	  TxHeader.RTR               = CAN_RTR_DATA;       //(Remote Transmission Request) especifica Remote Fraame ou Data Frame.
-	  TxHeader.IDE               = CAN_ID_STD;    //define o tipo de id (standard ou extended
-	  TxHeader.DLC               = 8;      //Tamanho do pacote 0 - 8 bytes
+	  TxHeader.StdId             = BROADCAST;
+	  TxHeader.RTR               = CAN_RTR_DATA;
+	  TxHeader.IDE               = CAN_ID_STD;
+	  TxHeader.DLC               = 8;
 	  TxHeader.TransmitGlobalTime = DISABLE;
 
 	  int status = HAL_CAN_AddTxMessage(&hcan1, &TxHeader, tx, &TxMailbox);

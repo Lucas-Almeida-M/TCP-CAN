@@ -26,15 +26,5 @@ typedef struct _device
 
 }device;
 
-//typedef struct _DeviceState
-//{
-//	bool devices[10]; // HABILITAR DE ACORDO COM device
-//	uint8_t deviceCount;
-//}DeviceState;
-
-
-
-
-
 
 #endif /* INC_CAN_APP_H_ */

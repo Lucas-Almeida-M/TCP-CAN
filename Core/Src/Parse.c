@@ -20,13 +20,12 @@ CAN_FilterTypeDef *canFilterConfig1;
 bool CanWritePacket(uint32_t id, uint8_t *buffer, uint8_t can_rtr, uint16_t tamanho)
 {
 
-	TxHeader.StdId             = id;     // ID do dispositivo
-	TxHeader.RTR               = can_rtr;       //(Remote Transmission Request) especifica Remote Fraame ou Data Frame.
-	TxHeader.IDE               = CAN_ID_STD;    //define o tipo de id (standard ou extended
-	TxHeader.DLC               = tamanho;      //Tamanho do pacote 0 - 8 bytes
+	TxHeader.StdId             = id;
+	TxHeader.RTR               = can_rtr;
+	TxHeader.IDE               = CAN_ID_STD;
+	TxHeader.DLC               = tamanho;
 	TxHeader.TransmitGlobalTime = DISABLE;
 
-	//Data Frame é a mensagem que contém informações a serem transmitidas do emissor ao receptor
 
 	if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, buffer, &TxMailbox) != HAL_OK)
 	{
@@ -96,15 +95,14 @@ void ConfigFilterList (uint32_t id1, uint32_t id2, uint32_t id3, uint32_t id4, u
 
     HAL_CAN_ConfigFilter(&hcan1, &filterConfig);
 
-   // return (HAL_CAN_ConfigFilter(&hcan1, &filterConfig) == HAL_OK) ? false : true;
 }
 
 void InitFilterList(uint32_t *idList, uint8_t numFilters, uint8_t filterScale)
 {
 
-	//Como o protocolo é simples, não foi adicionada a o possibilidade de utilização com EXTID (id com 29 bits)
+
 	uint16_t filterBankCounter = 0;
-	uint8_t maxFilterBanks = FILTER_MAX_NUM; //STM32F0 tem somente uma interface CAN assim tendo apenas 14 filter banks
+	uint8_t maxFilterBanks = FILTER_MAX_NUM;
 	uint32_t id, id1, id2, id3, id4 = 0;
 
 
@@ -114,13 +112,13 @@ void InitFilterList(uint32_t *idList, uint8_t numFilters, uint8_t filterScale)
 	}
 
 
-	if (filterScale == FILTER_TYPE_32) //Utilizando o registrados em 32bits
+	if (filterScale == FILTER_TYPE_32)
 	{
 		for (id = 0; id < numFilters && filterBankCounter < maxFilterBanks; id += 2)
 		{
 			id1 = idList[id];
 			id2 = idList[id + 1];
-			ConfigFilterList(id1, id2, 0x0000, 0x0000, filterBankCounter, STD_ID, filterScale); // considerar sómente o ID1 e ID2
+			ConfigFilterList(id1, id2, 0x0000, 0x0000, filterBankCounter, STD_ID, filterScale);
 			filterBankCounter++;
 		}
 	}

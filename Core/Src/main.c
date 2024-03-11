@@ -27,7 +27,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "tcpserver.h"
+
 #include "api.h"
 #include "Parse.h"
 #include "stdio.h"
@@ -209,11 +209,6 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-//	sprintf (smsgc, "index value = %d\n", indx++);
-//	// semaphore must be taken before accessing the tcpsend function
-//	sys_arch_sem_wait(&tcpsem, 500);
-//	// send the data to the server
-//	tcpsend(smsgc);
 
 	osDelay(5000);
 
@@ -259,7 +254,6 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 			}
 			int writenSYNC = sprintf(result, "@#%d#", id);
 			writenSYNC += sprintf(result + writenSYNC, "$%d$", MessageType);
-//			writenSYNC += sprintf(result + writenSYNC, "&%d", deviceCount);
 			for (int i = 0; i < MAX_DEVICES; ++i)
 			{
 				if (state[i].deviceSync)
@@ -392,11 +386,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	char tcpmsg [64] = {0};
 	buildMessage(SYNC, &devices, BROADCAST, tcpmsg);
 
-    HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin); //  debug
+    HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 
     __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
 	HAL_TIM_Base_Stop_IT(&htim4);
-	//Pegar semaforo
 
 	if (Connected)
 		xQueueSendToBackFromISR(queue_tcp_sendHandle, &tcpmsg, &xHigherPriorityTaskWoken);
