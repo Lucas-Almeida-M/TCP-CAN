@@ -222,17 +222,17 @@ void StartDefaultTask(void const * argument)
 }
 
 
-void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
+void buildMessage(uint8_t canID, uint8_t deviceNum, void *data, char *result)
 {
-	switch (MessageType)
+	switch (canID)
 	{
 		case DATA:
 		device *sensorData = (device*)data;
-		int writenDATA = sprintf(result, "@#%d#", id);
-		writenDATA += sprintf(result + writenDATA, "$%d$", MessageType);
+		int writenDATA = sprintf(result, "@#%d#", canID );
+		writenDATA += sprintf(result + writenDATA, "$%d$", deviceNum);
 		for (int i = 0; i < MAX_SENSORS; ++i)
 		{
-			if( (devices[id - HEADER_ID].activeSensorNumber) & (1<<i))
+			if( (devices[deviceNum].activeSensorNumber) & (1<<i))
 			{
 				writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorData[i]);
 			}
@@ -248,26 +248,16 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 
 		case SYNC:
 			device *state = (device*)data;
-			uint8_t deviceCount = 0;
 			int lenData = 0;
-			for (int i = 0; i < MAX_DEVICES; i++)
-			{
-				if (state[i].deviceSync)
-				{
-					deviceCount++;
-				}
-			}
-			int writenSYNC = sprintf(result, "@#%d#", id);
-			writenSYNC += sprintf(result + writenSYNC, "$%d$", MessageType);
-//			writenSYNC += sprintf(result + writenSYNC, "&%d", deviceCount);
+			int writenSYNC = sprintf(result, "@#%d#", canID);
+			writenSYNC += sprintf(result + writenSYNC, "$%d$", deviceNum);
 			for (int i = 0; i < MAX_DEVICES; ++i)
 			{
 				if (state[i].deviceSync)
 				{
-					writenSYNC += sprintf(result + writenSYNC, "&%d", i + HEADER_ID);
+					writenSYNC += sprintf(result + writenSYNC, "&%d", i );
 					lenData++;
 				}
-
 			}
 			if (lenData > 0)
 			{
@@ -277,7 +267,9 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 			{
 				strcat(result, "&&!");
 			}
+			break;
 
+		default:
 
 			break;
 
@@ -305,11 +297,11 @@ void setbit(uint8_t *variable, int bitNumber, int value)
     }
 }
 
-void reboot_device(uint8_t id)
+void reboot_device(uint8_t deviceNum)
 {
 	CanPacket canPacket = {0};
-	canPacket.canID = id;
-	canPacket.canDataFields.ctrl0 = REBOOT;
+	canPacket.canID = REBOOT;
+	canPacket.canDataFields.deviceNum = deviceNum;
 	xQueueSendToBack(queue_can_sendHandle, &canPacket ,0);
 }
 
@@ -323,8 +315,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 			CanPacket canTesteCfg = {0};
-			canTesteCfg.canID = BROADCAST;
-			canTesteCfg.canDataFields.ctrl0 =  CONFIG;
+			canTesteCfg.canID = CONFIG;
+			canTesteCfg.canDataFields.deviceNum = BroadCast;
+
 			if (testcfg)
 			{
 				canTesteCfg.canDataFields.data[0] = 0x38;
@@ -367,19 +360,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
   if (htim->Instance == TIM3)
   {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	CanPacket canPacket = {0};
-
-	canPacket.canID = BROADCAST;
-	canPacket.canDataFields.ctrl0 = SYNC;
 	for (int i = 0; i < MAX_DEVICES; i++)
 	{
 		devices[i].deviceSync = 0;
 	}
-	canPacket.canID = BROADCAST;
-	canPacket.canDataFields.ctrl0 = SYNC;
 
-	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
+	send_sync_request();
 
 	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 	__HAL_TIM_CLEAR_IT(&htim4 ,TIM_IT_UPDATE);
@@ -389,14 +375,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM4)
   {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
 	char tcpmsg [64] = {0};
-	buildMessage(SYNC, &devices, BROADCAST, tcpmsg);
+	buildMessage(SYNC, ClientBoard, &devices, tcpmsg);
 
     HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin); //  debug
 
     __HAL_TIM_CLEAR_IT(&htim4, TIM_IT_UPDATE);
 	HAL_TIM_Base_Stop_IT(&htim4);
-	//Pegar semaforo
 
 	if (Connected)
 		xQueueSendToBackFromISR(queue_tcp_sendHandle, &tcpmsg, &xHigherPriorityTaskWoken);

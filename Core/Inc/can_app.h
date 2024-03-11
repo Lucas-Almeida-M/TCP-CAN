@@ -18,7 +18,7 @@
 
 typedef struct _device
 {
-	uint8_t id;
+	uint8_t deviceNum;
 	bool deviceSync;
 	uint8_t activeSensorNumber;
 	uint8_t sensorUpdated;
@@ -32,7 +32,7 @@ typedef struct _device
 //	uint8_t deviceCount;
 //}DeviceState;
 
-
+int send_sync_request(void);
 
 
 

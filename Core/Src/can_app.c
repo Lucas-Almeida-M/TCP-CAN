@@ -37,7 +37,7 @@ void ReceiveCAN_MSG(void *argument)
 
 	for (int i = 0; i < MAX_DEVICES; i++)
 	{
-		devices[i].id = i + HEADER_ID;
+		devices[i].deviceNum = i;
 	}
 
 	CanPacket canMSG = {0};
@@ -48,47 +48,42 @@ void ReceiveCAN_MSG(void *argument)
 	BaseType_t xStatus = xQueueReceive(queue_can_receiveHandle, &canMSG, 0);
 	if (xStatus == pdPASS)
 	{
-		if (DEBUG_LEVEL > NONE)
-		{
-			sprintf(CanMsgDebug, "CAN message received [ID: %d] [MT: %d] \r\n", canMSG.canID, canMSG.canDataFields.ctrl0);
-			print_debug (CanMsgDebug);
-			memset(CanMsgDebug, 0, sizeof(CanMsgDebug));
-		}
 
- 		switch (canMSG.canDataFields.ctrl0)
+
+ 		switch (canMSG.canID)
 		{
 			case CONFIG:
-				if (canMSG.canDataFields.ctrl1 == 1)
+				if (canMSG.canDataFields.control == 1)
 				{
-					memset(&devices[canMSG.canID - HEADER_ID ].sensorUpdated, 0 ,sizeof(devices[canMSG.canID - HEADER_ID ].sensorUpdated) );
-					memset(&devices[canMSG.canID - HEADER_ID].sensorData, 0 , sizeof(devices[canMSG.canID - HEADER_ID].sensorData));
+					memset(&devices[canMSG.canDataFields.deviceNum].sensorUpdated, 0 ,sizeof(devices[canMSG.canDataFields.deviceNum].sensorUpdated) );
+					memset(&devices[canMSG.canDataFields.deviceNum].sensorData, 0 , sizeof(devices[canMSG.canDataFields.deviceNum].sensorData));
 				}
 				break;
 			case DATA:
 				uint8_t j = 0;
 				for (int i = 0; i < MAX_SENSORS; i++)
 				{
-					if (canMSG.canDataFields.ctrl1 & (1<<i) )
+					if (canMSG.canDataFields.control & (1<<i) )
 					{
-						devices[canMSG.canID - HEADER_ID ].sensorData[i] = ( (uint16_t)canMSG.canDataFields.data[j] << 8) | (uint16_t)(canMSG.canDataFields.data[j+1]) ;
-						setbit(&devices[canMSG.canID - HEADER_ID ].sensorUpdated, i, 1);
+						devices[canMSG.canDataFields.deviceNum].sensorData[i] = ( (uint16_t)canMSG.canDataFields.data[j] << 8) | (uint16_t)(canMSG.canDataFields.data[j+1]) ;
+						setbit(&devices[canMSG.canDataFields.deviceNum ].sensorUpdated, i, 1);
 						j+=2;
 					}
 
-					if (devices[canMSG.canID - HEADER_ID ].activeSensorNumber == devices[canMSG.canID - HEADER_ID].sensorUpdated)
+					if (devices[canMSG.canDataFields.deviceNum].activeSensorNumber == devices[canMSG.canDataFields.deviceNum].sensorUpdated)
 					{
-						buildMessage(DATA, &devices[canMSG.canID - HEADER_ID], canMSG.canID, msg);
+						buildMessage(canMSG.canID, canMSG.canDataFields.deviceNum, &devices[canMSG.canDataFields.deviceNum], msg);
 						xQueueSendToBack(queue_tcp_sendHandle, msg, 0);
 						memset(msg, 0, sizeof(msg));
-						memset(&devices[canMSG.canID - HEADER_ID].sensorUpdated, 0 ,sizeof(devices[canMSG.canID - HEADER_ID ].sensorUpdated) );
-						memset(&devices[canMSG.canID - HEADER_ID].sensorData, 0 , sizeof(devices[canMSG.canID - HEADER_ID].sensorData));
+						memset(&devices[canMSG.canDataFields.deviceNum].sensorUpdated, 0 ,sizeof(devices[canMSG.canDataFields.deviceNum ].sensorUpdated) );
+						memset(&devices[canMSG.canDataFields.deviceNum].sensorData, 0 , sizeof(devices[canMSG.canDataFields.deviceNum].sensorData));
 						break;
 					}
 				}
 				break;
 			case SYNC:
-				devices[canMSG.canID - HEADER_ID].deviceSync = true;
-				devices[canMSG.canID - HEADER_ID].activeSensorNumber = canMSG.canDataFields.ctrl1;
+				devices[canMSG.canDataFields.deviceNum].deviceSync = true;
+				devices[canMSG.canDataFields.deviceNum].activeSensorNumber = canMSG.canDataFields.control;
 				osDelay(5);
 				break;
 		}
@@ -135,7 +130,7 @@ void SendCAN_MSG(void *argument)
 
 		if (DEBUG_LEVEL > NONE)
 		{
-			sprintf(CanMsgDebug, "CAN message sent [ID: %d] [MT: %d] \r\n", canMSG.canID, canMSG.canDataFields.ctrl0);
+			sprintf(CanMsgDebug, "CAN message sent [ID: %d] [MT: %d] \r\n", canMSG.canID, canMSG.canDataFields.deviceNum);
 			print_debug (CanMsgDebug);
 			memset(CanMsgDebug, 0, sizeof(CanMsgDebug));
 		}
@@ -162,9 +157,16 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	CanPacket canPacket = { 0 } ;
 
+
 	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, canRX);
 	canPacket.canID = RxHeader.StdId;
 	memcpy(&canPacket.canDataFields, canRX, sizeof(canRX));
+	if (DEBUG_LEVEL > NONE)
+	{
+		sprintf(CanMsgDebug, "CAN message received [ID: %d] [MT: %d] \r\n", canPacket.canID, canPacket.canDataFields.deviceNum);
+		print_debug (CanMsgDebug);
+		memset(CanMsgDebug, 0, sizeof(CanMsgDebug));
+	}
 	xQueueSendToBackFromISR(queue_can_receiveHandle, &canPacket, &xHigherPriorityTaskWoken);
 
 //	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -176,17 +178,11 @@ int send_sync_request(void)
 {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	CanPacket canPacket = { 0 } ;
-	canPacket.canID = BROADCAST;
-	canPacket.canDataFields.ctrl0 = SYNC;
-
+	canPacket.canID = SYNC;
+	canPacket.canDataFields.deviceNum = BroadCast;
 
 	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
 	return 0;
-}
-
-int send_sync_status(void)
-{
-//	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
 }
 
 
@@ -199,7 +195,7 @@ int send_sync_status(void)
 void sendCanMsg_test(int delay)
 {
 	  uint8_t tx[8] = {0,1,2,3,4,5,6,7};
-	  TxHeader.StdId             = BROADCAST;     // ID do dispositivo
+	  TxHeader.StdId             = SYNC;     // ID do dispositivo
 	  TxHeader.RTR               = CAN_RTR_DATA;       //(Remote Transmission Request) especifica Remote Fraame ou Data Frame.
 	  TxHeader.IDE               = CAN_ID_STD;    //define o tipo de id (standard ou extended
 	  TxHeader.DLC               = 8;      //Tamanho do pacote 0 - 8 bytes

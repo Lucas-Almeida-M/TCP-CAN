@@ -60,9 +60,9 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result);
+void buildMessage(uint8_t canID, uint8_t deviceNum, void *data, char *result);
 void setbit(uint8_t *variable, int bitNumber, int value);
-void reboot_device(uint8_t id);
+void reboot_device(uint8_t deviceNum);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

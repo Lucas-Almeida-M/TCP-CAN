@@ -20,7 +20,7 @@ CAN_FilterTypeDef *canFilterConfig1;
 bool CanWritePacket(uint32_t id, uint8_t *buffer, uint8_t can_rtr, uint16_t tamanho)
 {
 
-	TxHeader.StdId             = id;     // ID do dispositivo
+	TxHeader.StdId             = id;            // ID da mensagem
 	TxHeader.RTR               = can_rtr;       //(Remote Transmission Request) especifica Remote Fraame ou Data Frame.
 	TxHeader.IDE               = CAN_ID_STD;    //define o tipo de id (standard ou extended
 	TxHeader.DLC               = tamanho;      //Tamanho do pacote 0 - 8 bytes
