@@ -15,7 +15,7 @@ bool Connected = false;
 extern bool clientOnline;
 
 TcpMessage tcpMessage = {0};
-char msgc[100];
+char msg[100];
 char smsgc[200];
 int indx = 0;
 
@@ -30,61 +30,61 @@ static void tcpinit_thread(void *arg)
 {
 	err_t err, connect_error;
 
-
-	conn = netconn_new(NETCONN_TCP);
-
-	if (conn!=NULL)
+	while (1)
 	{
+		conn = netconn_new(NETCONN_TCP);
 
-		err = netconn_bind(conn, IP_ADDR_ANY, 7);
-
-		if (err == ERR_OK)
+		if (conn!=NULL)
 		{
 
-			IP_ADDR4(&dest_addr, 192, 168, 0, 101);
-			dest_port = 8000;  // server port
+			err = netconn_bind(conn, IP_ADDR_ANY, 7);
 
-			connect_error = netconn_connect(conn, &dest_addr, dest_port);
-
-			if (connect_error == ERR_OK)
+			if (err == ERR_OK)
 			{
-				Connected = true;
-				sys_sem_signal(&tcpsem);
-				while (1)
-				{
 
-					if (netconn_recv(conn, &buf) == ERR_OK)
+				IP_ADDR4(&dest_addr, 192, 168, 0, 100);
+				dest_port = 8000;
+
+				connect_error = netconn_connect(conn, &dest_addr, dest_port);
+
+				if (connect_error == ERR_OK)
+				{
+					Connected = true;
+					sys_sem_signal(&tcpsem);
+					while (1)
 					{
 
-						addr = netbuf_fromaddr(buf);
-						port = netbuf_fromport(buf);
-
-						do
+						if (netconn_recv(conn, &buf) == ERR_OK)
 						{
 
-							strncpy (msgc, buf->p->payload, buf->p->len);
+							addr = netbuf_fromaddr(buf);
+							port = netbuf_fromport(buf);
 
-							// TCP Message reveived
+							do
+							{
+								strncpy (msg, buf->p->payload, buf->p->len);
+//								recv_tcp_msg(&msg);
+								memset (msg, 0, 100);
+							}
+							while (netbuf_next(buf) > 0);
 
-							memset (msgc, '\0', 100);
+							netbuf_delete(buf);
 						}
-						while (netbuf_next(buf) > 0);
-
-						netbuf_delete(buf);
 					}
 				}
-			}
 
+				else
+				{
+					netconn_close(conn);
+					netconn_delete(conn);
+				}
+			}
 			else
 			{
-				netconn_close(conn);
 				netconn_delete(conn);
 			}
 		}
-		else
-		{
-			netconn_delete(conn);
-		}
+		osDelay(1000);
 	}
 }
 
