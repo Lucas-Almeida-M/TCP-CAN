@@ -5,7 +5,7 @@
 
 #define  TCP_MSG_SIZE 64
 
-
+#include "eth_app.h"
 void tcpclient_init (void);
 void tcpsend (char *data);
 

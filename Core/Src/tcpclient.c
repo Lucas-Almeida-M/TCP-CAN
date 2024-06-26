@@ -63,7 +63,7 @@ static void tcpinit_thread(void *arg)
 							do
 							{
 								strncpy (msg, buf->p->payload, buf->p->len);
-//								recv_tcp_msg(&msg);
+								decode_msg((uint8_t*)&msg);
 								memset (msg, 0, 100);
 							}
 							while (netbuf_next(buf) > 0);
