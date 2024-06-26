@@ -39,6 +39,7 @@ extern "C" {
 #include "tcpclient.h"
 #include "can_app.h"
 
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

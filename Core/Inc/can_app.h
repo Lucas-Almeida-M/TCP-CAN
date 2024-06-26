@@ -16,15 +16,28 @@
 #define MAX_DEVICES 10
 #define HEADER_ID   2
 
+
+
+typedef struct _StatusSlave
+{
+	uint8_t sensorsHab;
+	uint8_t internalTemp;
+	uint16_t transmissionErrors;
+	uint16_t runtime;
+}StatusSlave;
+
 typedef struct _device
 {
 	uint8_t id;
 	bool deviceSync;
+	bool deviceStatusSync;
+	StatusSlave statusDevice;
 	uint8_t activeSensorNumber;
 	uint8_t sensorUpdated;
 	uint32_t sensorData[8];
-
 }device;
+
+
 
 
 #endif /* INC_CAN_APP_H_ */

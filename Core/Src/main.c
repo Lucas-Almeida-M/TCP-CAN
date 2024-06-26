@@ -117,6 +117,8 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_USART3_UART_Init();
+  MX_TIM8_Init();
+  MX_TIM9_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim2);
 
@@ -229,7 +231,7 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 		{
 			if( (devices[id - HEADER_ID].activeSensorNumber) & (1<<i))
 			{
-				writenDATA += sprintf(result + writenDATA, "&%d", sensorData->sensorData[i]);
+				writenDATA += sprintf(result + writenDATA, "&%ld", sensorData->sensorData[i]);
 			}
 			else
 			{
@@ -272,6 +274,19 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 				strcat(result, "&&!");
 			}
 
+
+			break;
+
+		case STATUS:
+			StatusSlave *status = (StatusSlave*)data;
+
+			int writenSTATUS = sprintf(result, "@#%d#", id);
+			writenSTATUS += sprintf(result + writenSTATUS, "$%d$", MessageType);
+
+			writenSTATUS += sprintf(result + writenSTATUS, "&%d", status->sensorsHab);
+			writenSTATUS += sprintf(result + writenSTATUS, "&%d", status->internalTemp);
+			writenSTATUS += sprintf(result + writenSTATUS, "&%d", status->transmissionErrors);
+			writenSTATUS += sprintf(result + writenSTATUS, "&%d", status->runtime);
 
 			break;
 
@@ -359,6 +374,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     __NOP();
   }
 
+  //-------------- Request SYNC --------------
+
   if (htim->Instance == TIM3)
   {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -370,8 +387,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		devices[i].deviceSync = 0;
 	}
-	canPacket.canID = BROADCAST;
-	canPacket.canDataFields.ctrl0 = SYNC;
 
 	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
 
@@ -379,7 +394,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	__HAL_TIM_CLEAR_IT(&htim4 ,TIM_IT_UPDATE);
 	HAL_TIM_Base_Start_IT(&htim4);
   }
+  //-------------- Request SYNC --------------
 
+
+//-------------- Resposta SYNC --------------
   if (htim->Instance == TIM4)
   {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -393,10 +411,53 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	if (Connected)
 		xQueueSendToBackFromISR(queue_tcp_sendHandle, &tcpmsg, &xHigherPriorityTaskWoken);
+  }
+  //-------------- Resposta SYNC --------------
+
+  //-------------- Request STATUS --------------
+  if (htim->Instance == TIM8)
+  {
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	CanPacket canPacket = {0};
+
+	canPacket.canID = BROADCAST;
+	canPacket.canDataFields.ctrl0 = STATUS;
+
+	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
+	__HAL_TIM_CLEAR_IT(&htim9 ,TIM_IT_UPDATE);
+	HAL_TIM_Base_Start_IT(&htim9);
+  }
+  //-------------- Request STATUS --------------
 
 
+  //-------------- Resposta STATUS --------------
+  if (htim->Instance == TIM9)
+  {
+
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+
+	__HAL_TIM_CLEAR_IT(&htim9, TIM_IT_UPDATE);
+	HAL_TIM_Base_Stop_IT(&htim9);
+
+	if (Connected)
+	{
+		for (int i = 0; i < MAX_DEVICES; i++)
+		{
+			if(devices[i].deviceStatusSync)
+			{
+				char tcpmsg [64] = {0};
+				buildMessage(STATUS, &devices[i].statusDevice, BROADCAST, tcpmsg);
+				xQueueSendToBackFromISR(queue_tcp_sendHandle, &tcpmsg, &xHigherPriorityTaskWoken);
+			}
+			devices[i].deviceSync = false;
+		}
+
+	}
 
   }
+  //-------------- Resposta STATUS --------------
+
   /* USER CODE END Callback 1 */
 }
 

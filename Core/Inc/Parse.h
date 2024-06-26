@@ -59,10 +59,11 @@ typedef union
 
 enum MessageType
 {
-	CONFIG = 0x0,
+	SYNC   = 0x0,
 	DATA   = 0x1,
-	SYNC   = 0x2,
-	REBOOT = 0x3
+	CONFIG = 0x2,
+	STATUS = 0x3,
+	REBOOT = 0x4
 };
 
 
