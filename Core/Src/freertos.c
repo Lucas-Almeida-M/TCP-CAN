@@ -59,6 +59,9 @@ osStaticThreadDef_t ReceiveCAN_MSG_ControlBlock;
 osThreadId SendCAN_MSG_Handle;
 uint32_t SendCAN_MSG_Buffer[ 256 ];
 osStaticThreadDef_t SendCAN_MSG_ControlBlock;
+osThreadId ReceiveTCP_MSG_Handle;
+uint32_t ReceiveTCP_MSG_Buffer[ 512 ];
+osStaticThreadDef_t ReceiveTCP_MSG_ControlBlock;
 osMessageQId queue_can_receiveHandle;
 uint8_t queue_can_receiveBuffer[ 20 * sizeof( CanPacket ) ];
 osStaticMessageQDef_t queue_can_receiveControlBlock;
@@ -68,6 +71,9 @@ osStaticMessageQDef_t queue_can_sendControlBlock;
 osMessageQId queue_tcp_sendHandle;
 uint8_t queue_tcp_sendBuffer[ 20 * sizeof( TcpMessage ) ];
 osStaticMessageQDef_t queu_tcp_sendControlBlock;
+osMessageQId queue_tcp_receiveHandle;
+uint8_t queue_tcp_receiveBuffer[ 20 * sizeof( TcpMessage ) ];
+osStaticMessageQDef_t queue_tcp_receiveControlBlock;
 osSemaphoreId SyncSemaphoreHandle;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -79,6 +85,7 @@ void StartDefaultTask(void const * argument);
 void SendTCP_MSG(void const * argument);
 void ReceiveCAN_MSG(void const * argument);
 void SendCAN_MSG(void const * argument);
+void ReceiveTCP_MSG(void const * argument);
 
 extern void MX_LWIP_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -139,6 +146,10 @@ void MX_FREERTOS_Init(void) {
   osMessageQStaticDef(queue_tcp_send, 20, TcpMessage, queue_tcp_sendBuffer, &queu_tcp_sendControlBlock);
   queue_tcp_sendHandle = osMessageCreate(osMessageQ(queue_tcp_send), NULL);
 
+  /* definition and creation of queue_tcp_receive */
+  osMessageQStaticDef(queue_tcp_receive, 20, TcpMessage, queue_tcp_receiveBuffer, &queue_tcp_receiveControlBlock);
+  queue_tcp_receiveHandle = osMessageCreate(osMessageQ(queue_tcp_receive), NULL);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -159,6 +170,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of SendCAN_MSG_ */
   osThreadStaticDef(SendCAN_MSG_, SendCAN_MSG, osPriorityBelowNormal, 0, 256, SendCAN_MSG_Buffer, &SendCAN_MSG_ControlBlock);
   SendCAN_MSG_Handle = osThreadCreate(osThread(SendCAN_MSG_), NULL);
+
+  /* definition and creation of ReceiveTCP_MSG_ */
+  osThreadStaticDef(ReceiveTCP_MSG_, ReceiveTCP_MSG, osPriorityIdle, 0, 512, ReceiveTCP_MSG_Buffer, &ReceiveTCP_MSG_ControlBlock);
+  ReceiveTCP_MSG_Handle = osThreadCreate(osThread(ReceiveTCP_MSG_), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -238,6 +253,24 @@ __weak void SendCAN_MSG(void const * argument)
     osDelay(1);
   }
   /* USER CODE END SendCAN_MSG */
+}
+
+/* USER CODE BEGIN Header_ReceiveTCP_MSG */
+/**
+* @brief Function implementing the ReceiveTCP_MSG_ thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_ReceiveTCP_MSG */
+__weak void ReceiveTCP_MSG(void const * argument)
+{
+  /* USER CODE BEGIN ReceiveTCP_MSG */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END ReceiveTCP_MSG */
 }
 
 /* Private application code --------------------------------------------------*/

@@ -13,9 +13,10 @@ static unsigned short port, dest_port;
 extern osMessageQId queue_tcp_sendHandle;
 bool Connected = false;
 extern bool clientOnline;
+extern osMessageQId queue_tcp_receiveHandle;
 
 TcpMessage tcpMessage = {0};
-char msg[100];
+char msg[64];
 char smsgc[200];
 int indx = 0;
 
@@ -63,7 +64,11 @@ static void tcpinit_thread(void *arg)
 							do
 							{
 								strncpy (msg, buf->p->payload, buf->p->len);
-								decode_msg((uint8_t*)&msg);
+								BaseType_t xStatus = xQueueSendToBack(queue_tcp_receiveHandle, &msg, 0);
+								if (xStatus != pdPASS)
+								{
+
+								}
 								memset (msg, 0, 100);
 							}
 							while (netbuf_next(buf) > 0);
