@@ -41,6 +41,7 @@
 
 bool testcfg = 0;
 bool clientOnline = 0;
+uint64_t count_sync = 0;
 struct netconn com1 = {0};
 extern bool Connected;
 uint8_t canMessage = 0;
@@ -121,6 +122,7 @@ int main(void)
   MX_TIM9_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim2);
+
 
 
   /* USER CODE END 2 */
@@ -208,6 +210,7 @@ void StartDefaultTask(void const * argument)
   osDelay(2000);
   clientOnline = 1;
   HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&htim8);
   /* Infinite loop */
   for(;;)
   {
@@ -224,24 +227,23 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 	switch (MessageType)
 	{
 		case DATA:
-		device *sensorData = (device*)data;
-		int writenDATA = sprintf(result, "@#%d#", id);
-		writenDATA += sprintf(result + writenDATA, "$%d$", MessageType);
-		for (int i = 0; i < MAX_SENSORS; ++i)
-		{
-			if( (devices[id - HEADER_ID].activeSensorNumber) & (1<<i))
+			device *sensorData = (device*)data;
+			int writenDATA = sprintf(result, "@#%d#", id);
+			writenDATA += sprintf(result + writenDATA, "$%d$", MessageType);
+			for (int i = 0; i < MAX_SENSORS; ++i)
 			{
-				writenDATA += sprintf(result + writenDATA, "&%ld", sensorData->sensorData[i]);
+				if( (devices[id - HEADER_ID].activeSensorNumber) & (1<<i))
+				{
+					writenDATA += sprintf(result + writenDATA, "&%ld", sensorData->sensorData[i]);
+				}
+				else
+				{
+					writenDATA += sprintf(result + writenDATA, "&null");
+				}
 			}
-			else
-			{
-				writenDATA += sprintf(result + writenDATA, "&null");
-			}
-		}
-		strcat(result, "&!");
+			strcat(result, "&!");
 
 		break;
-
 
 		case SYNC:
 			device *state = (device*)data;
@@ -287,6 +289,8 @@ void buildMessage(uint8_t MessageType, void *data, uint8_t id, char *result)
 			writenSTATUS += sprintf(result + writenSTATUS, "&%d", status->internalTemp);
 			writenSTATUS += sprintf(result + writenSTATUS, "&%d", status->transmissionErrors);
 			writenSTATUS += sprintf(result + writenSTATUS, "&%d", status->runtime);
+
+			strcat(result, "&!");
 
 			break;
 
@@ -378,6 +382,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
   if (htim->Instance == TIM3)
   {
+	count_sync++;
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	CanPacket canPacket = {0};
 
@@ -389,6 +394,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 
 	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
+
+	if (count_sync % 10 == 0)
+	{
+		memset(&canPacket, 0, sizeof (canPacket));
+		canPacket.canID = BROADCAST;
+		canPacket.canDataFields.ctrl0 = STATUS;
+
+		xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
+	}
 
 	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 	__HAL_TIM_CLEAR_IT(&htim4 ,TIM_IT_UPDATE);
@@ -417,45 +431,45 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   //-------------- Request STATUS --------------
   if (htim->Instance == TIM8)
   {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	CanPacket canPacket = {0};
+//	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+//	CanPacket canPacket = {0};
+//
+//	canPacket.canID = BROADCAST;
+//	canPacket.canDataFields.ctrl0 = STATUS;
 
-	canPacket.canID = BROADCAST;
-	canPacket.canDataFields.ctrl0 = STATUS;
-
-	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
-	__HAL_TIM_CLEAR_IT(&htim9 ,TIM_IT_UPDATE);
-	HAL_TIM_Base_Start_IT(&htim9);
+//	xQueueSendToBackFromISR(queue_can_sendHandle, &canPacket, &xHigherPriorityTaskWoken);
+//	__HAL_TIM_CLEAR_IT(&htim9 ,TIM_IT_UPDATE);
+//	HAL_TIM_Base_Start_IT(&htim9);
   }
-  //-------------- Request STATUS --------------
-
-
-  //-------------- Resposta STATUS --------------
-  if (htim->Instance == TIM9)
-  {
-
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-
-	__HAL_TIM_CLEAR_IT(&htim9, TIM_IT_UPDATE);
-	HAL_TIM_Base_Stop_IT(&htim9);
-
-	if (Connected)
-	{
-		for (int i = 0; i < MAX_DEVICES; i++)
-		{
-			if(devices[i].deviceStatusSync)
-			{
-				char tcpmsg [64] = {0};
-				buildMessage(STATUS, &devices[i].statusDevice, BROADCAST, tcpmsg);
-				xQueueSendToBackFromISR(queue_tcp_sendHandle, &tcpmsg, &xHigherPriorityTaskWoken);
-			}
-			devices[i].deviceSync = false;
-		}
-
-	}
-
-  }
+//  //-------------- Request STATUS --------------
+//
+//
+//  //-------------- Resposta STATUS --------------
+//  if (htim->Instance == TIM9)
+//  {
+//
+//	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+//
+//
+//	__HAL_TIM_CLEAR_IT(&htim9, TIM_IT_UPDATE);
+//	HAL_TIM_Base_Stop_IT(&htim9);
+//
+//	if (Connected)
+//	{
+//		for (int i = 0; i < MAX_DEVICES; i++)
+//		{
+//			if(devices[i].deviceStatusSync)
+//			{
+//				char tcpmsg [64] = {0};
+//				buildMessage(STATUS, &devices[i].statusDevice, BROADCAST, tcpmsg);
+//				xQueueSendToBackFromISR(queue_tcp_sendHandle, &tcpmsg, &xHigherPriorityTaskWoken);
+//			}
+//			devices[i].deviceSync = false;
+//		}
+//
+//	}
+//
+//  }
   //-------------- Resposta STATUS --------------
 
   /* USER CODE END Callback 1 */

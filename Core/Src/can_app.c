@@ -99,8 +99,8 @@ void ReceiveCAN_MSG(void *argument)
 				devices[canMSG.canID - HEADER_ID].statusDevice.internalTemp = canMSG.canDataFields.data[1];
 				devices[canMSG.canID - HEADER_ID].statusDevice.transmissionErrors = (uint16_t)(canMSG.canDataFields.data[2] << 8) | (uint16_t)(canMSG.canDataFields.data[2]);
 				devices[canMSG.canID - HEADER_ID].statusDevice.runtime = (uint16_t)(canMSG.canDataFields.data[3] << 8) | (uint16_t)(canMSG.canDataFields.data[4]);
-
-
+				buildMessage(STATUS, &devices[canMSG.canID - HEADER_ID].statusDevice, canMSG.canID, msg);
+				xQueueSendToBack(queue_tcp_sendHandle, msg, 0);
 				break;
 		}
 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
